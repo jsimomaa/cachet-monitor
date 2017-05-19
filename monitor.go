@@ -169,6 +169,7 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	if mon.MetricID > 0 {
 		go mon.config.API.SendMetric(mon.MetricID, lag)
 	}
+	go mon.config.API.SendMetrics("response time", mon.Metrics.ResponseTime, lag)
 }
 
 // TODO: test
