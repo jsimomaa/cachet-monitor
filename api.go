@@ -53,7 +53,7 @@ func (api CachetAPI) SendMetrics(metricname string, arr []int, val int64) {
 
 		resp, _, err := api.NewRequest("POST", "/metrics/"+strconv.Itoa(v)+"/points", jsonBytes)
 		if err != nil || resp.StatusCode != 200 {
-			logrus.Warnf("Could not log to metric ID: %d, err: %v", v, err)
+			logrus.Warnf("Could not log metric '%s' (id: %d, status: %d, err: %v)", metricname, v, resp.StatusCode, err)
 		}
 	}
 }
