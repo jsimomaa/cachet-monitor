@@ -36,20 +36,28 @@ func (api CachetAPI) Ping() error {
 	return nil
 }
 
-// SendMetric adds a data point to a cachet monitor
+// SendMetric adds a data point to a cachet monitor - Deprecated
 func (api CachetAPI) SendMetric(id int, lag int64) {
-	logrus.Debugf("Sending lag metric ID:%d RTT %vms", id, lag)
+	api.SendMetrics("lag", []int { id }, lag)
+}
 
-	jsonBytes, _ := json.Marshal(map[string]interface{}{
-		"value":     lag,
-		"timestamp": time.Now().Unix(),
-	})
+// SendMetrics adds a data point to a cachet monitor
+func (api CachetAPI) SendMetrics(metricname string, arr []int, val int64) {
+	for _, v := range arr {
+		logrus.Debugf("Sending %s metric ID:%d => %v", metricname, v, val)
 
-	resp, _, err := api.NewRequest("POST", "/metrics/"+strconv.Itoa(id)+"/points", jsonBytes)
-	if err != nil || resp.StatusCode != 200 {
-		logrus.Warnf("Could not log metric! ID: %d, err: %v", id, err)
+		jsonBytes, _ := json.Marshal(map[string]interface{}{
+			"value":     val,
+			"timestamp": time.Now().Unix(),
+		})
+
+		resp, _, err := api.NewRequest("POST", "/metrics/"+strconv.Itoa(v)+"/points", jsonBytes)
+		if err != nil || resp.StatusCode != 200 {
+			logrus.Warnf("Could not log to metric ID: %d, err: %v", v, err)
+		}
 	}
 }
+
 
 // TODO: test
 // NewRequest wraps http.NewRequest

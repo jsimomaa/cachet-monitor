@@ -18,7 +18,12 @@ monitors:
     
     # set to update component (either component_id or metric_id are required)
     component_id: 1
-    # set to post lag to cachet metric (graph)
+    
+    # set to post to cachet metric (graph)
+    metrics:
+        response_time: [ 4, 5 ]
+
+    # set to post lag to cachet metric (graph) - obsolete
     metric_id: 4
 
     # custom templates (see readme for details)
@@ -58,8 +63,6 @@ monitors:
     # custom DNS server (defaults to system)
     dns: 8.8.4.4:53
     answers:
-      # exact/regex check
-      - regex: [1-9] alt[1-9].aspmx.l.google.com.
       - exact: 10 aspmx2.googlemail.com.
       - exact: 1 aspmx.l.google.com.
       - exact: 10 aspmx3.googlemail.com.

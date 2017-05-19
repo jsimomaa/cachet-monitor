@@ -38,6 +38,11 @@ type AbstractMonitor struct {
 	MetricID    int `mapstructure:"metric_id"`
 	ComponentID int `mapstructure:"component_id"`
 
+	// Metric stuff
+	Metrics struct {
+		ResponseTime []int	`mapstructure:"response_time"`
+	}
+
 	// Templating stuff
 	Template struct {
 		Investigating MessageTemplate
