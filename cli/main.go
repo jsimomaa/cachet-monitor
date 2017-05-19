@@ -18,6 +18,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const appversion = `v3.1`
+
 const usage = `cachet-monitor
 
 Usage:
@@ -38,14 +40,20 @@ Options:
   -h --help                      Show this screen.
   --version                      Show version
   --immediate                    Tick immediately (by default waits for first defined interval)
-  
-Environment varaibles:
+
+
+Environment variables:
   CACHET_API      override API url from configuration
   CACHET_TOKEN    override API token from configuration
   CACHET_DEV      set to enable dev logging`
 
 func main() {
-	arguments, _ := docopt.Parse(usage, nil, true, "cachet-monitor", false)
+	arguments, err := docopt.Parse(usage, nil, true, "cachet-monitor " + appversion, false)
+	if err != nil {
+		logrus.Panicf("Unable to start (reading config): %v", err)
+	}
+
+	logrus.SetOutput(getLogger(arguments["--log"]))
 
 	cfg, err := getConfiguration(arguments["--config"].(string))
 	if err != nil {
@@ -59,7 +67,6 @@ func main() {
 	if name := arguments["--name"]; name != nil {
 		cfg.SystemName = name.(string)
 	}
-	logrus.SetOutput(getLogger(arguments["--log"]))
 
 	if len(os.Getenv("CACHET_API")) > 0 {
 		cfg.API.URL = os.Getenv("CACHET_API")
