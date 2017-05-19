@@ -3,6 +3,7 @@ package cachet
 import (
 	"sync"
 	"time"
+	"strconv"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -111,6 +112,7 @@ func (mon *AbstractMonitor) Describe() []string {
 	if len(mon.Name) > 0 {
 		features = append(features, "Name: "+mon.Name)
 	}
+	features = append(features, "Response time metrics: "+strconv.Itoa(len(mon.Metrics.ResponseTime)))
 
 	return features
 }
