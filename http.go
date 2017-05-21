@@ -38,6 +38,29 @@ type HTTPMonitor struct {
 	// compiled to Regexp
 	ExpectedBody string `mapstructure:"expected_body"`
 	bodyRegexp   *regexp.Regexp
+	internalBodyRegexp   string
+}
+
+func (monitor *HTTPMonitor) setBodyRegexp(errs []string) {
+	monitor.internalBodyRegexp = monitor.ExpectedBody;
+	monitor.bodyRegexp = nil
+
+	if len(monitor.internalBodyRegexp) > 0 {
+		currentTime := time.Now()
+
+		monitor.internalBodyRegexp = strings.Replace(monitor.internalBodyRegexp, "%year%", currentTime.Format("2006"), -1)
+		monitor.internalBodyRegexp = strings.Replace(monitor.internalBodyRegexp, "%month%", currentTime.Format("01"), -1)
+		monitor.internalBodyRegexp = strings.Replace(monitor.internalBodyRegexp, "%day%", currentTime.Format("02"), -1)
+
+		exp, err := regexp.Compile(monitor.internalBodyRegexp)
+		if err != nil {
+			if errs != nil {
+				errs = append(errs, "Regexp compilation failure: "+err.Error())
+			}
+		} else {
+			monitor.bodyRegexp = exp
+		}
+	}
 }
 
 // TODO: test
@@ -67,6 +90,8 @@ func (monitor *HTTPMonitor) test() bool {
 		return false
 	}
 
+	monitor.setBodyRegexp(nil	)
+
 	if monitor.bodyRegexp != nil {
 		// check response body
 		responseBody, err := ioutil.ReadAll(resp.Body)
@@ -74,9 +99,8 @@ func (monitor *HTTPMonitor) test() bool {
 			monitor.lastFailReason = err.Error()
 			return false
 		}
-
 		if !monitor.bodyRegexp.Match(responseBody) {
-			monitor.lastFailReason = "Unexpected body: " + string(responseBody) + ".\nExpected to match: " + monitor.ExpectedBody
+			monitor.lastFailReason = "Unexpected body: " + string(responseBody) + ".\nExpected to match: " + monitor.internalBodyRegexp
 			return false
 		}
 	}
@@ -91,18 +115,11 @@ func (mon *HTTPMonitor) Validate() []string {
 
 	errs := mon.AbstractMonitor.Validate()
 
-	if len(mon.ExpectedBody) > 0 {
-		exp, err := regexp.Compile(mon.ExpectedBody)
-		if err != nil {
-			errs = append(errs, "Regexp compilation failure: "+err.Error())
-		} else {
-			mon.bodyRegexp = exp
-		}
-	}
-
 	if len(mon.ExpectedBody) == 0 && mon.ExpectedStatusCode == 0 {
 		errs = append(errs, "Both 'expected_body' and 'expected_status_code' fields empty")
 	}
+
+	mon.setBodyRegexp(errs)
 
 	mon.Method = strings.ToUpper(mon.Method)
 	switch mon.Method {
