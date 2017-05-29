@@ -174,9 +174,6 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 		histSize = int(mon.Threshold)
 	}
 
-	if len(mon.history) == histSize-1 {
-		logrus.Warnf("%v is now saturated", mon.Name)
-	}
 	if len(mon.history) >= histSize {
 		mon.history = mon.history[len(mon.history)-(histSize-1):]
 	}
