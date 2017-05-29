@@ -176,17 +176,17 @@ func getConfiguration(path string) (*cachet.CachetMonitor, error) {
 		}
 
 		switch monType {
-		case "http":
-			var s cachet.HTTPMonitor
-			err = mapstructure.Decode(rawMonitor, &s)
-			t = &s
-		case "dns":
-			var s cachet.DNSMonitor
-			err = mapstructure.Decode(rawMonitor, &s)
-			t = &s
-		default:
-			logrus.Errorf("Invalid monitor type (index: %d) %v", index, monType)
-			continue
+			case "http":
+				var s cachet.HTTPMonitor
+				err = mapstructure.Decode(rawMonitor, &s)
+				t = &s
+			case "dns":
+				var s cachet.DNSMonitor
+				err = mapstructure.Decode(rawMonitor, &s)
+				t = &s
+			default:
+				logrus.Errorf("Invalid monitor type (index: %d) %v", index, monType)
+				continue
 		}
 
 		t.GetMonitor().Type = monType
