@@ -166,7 +166,7 @@ func (mon *AbstractMonitor) test() bool { return false }
 
 func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	reqStart := getMs()
-	up := iface.test()
+	isUp := iface.test()
 	lag := getMs() - reqStart
 
 	histSize := HistorySize
@@ -177,7 +177,7 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	if len(mon.history) >= histSize {
 		mon.history = mon.history[len(mon.history)-(histSize-1):]
 	}
-	mon.history = append(mon.history, up)
+	mon.history = append(mon.history, isUp)
 	mon.AnalyseData()
 
 	// report lag
