@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-
-	"github.com/Sirupsen/logrus"
 )
 
 // Incident Cachet data model
@@ -24,22 +22,18 @@ type Incident struct {
 // Send - Create or Update incident
 func (incident *Incident) Send(cfg *CachetMonitor) error {
 	switch incident.Status {
-	case 1, 2, 3:
-		// partial outage
-		incident.ComponentStatus = 3
+		case 1, 2, 3:
+			// partial outage
+			incident.ComponentStatus = 3
 
-		componentStatus, err := incident.GetComponentStatus(cfg)
-		if componentStatus == 3 {
-			// major outage
-			incident.ComponentStatus = 4
-		}
-
-		if err != nil {
-			logrus.Warnf("cannot fetch component: %v", err)
-		}
-	case 4:
-		// fixed
-		incident.ComponentStatus = 1
+			compInfo := cfg.API.GetComponentData(incident.ComponentID)
+			if compInfo.Status == 3 {
+				// major outage
+				incident.ComponentStatus = 4
+			}
+		case 4:
+			// fixed
+			incident.ComponentStatus = 1
 	}
 
 	requestType := "POST"
@@ -69,26 +63,6 @@ func (incident *Incident) Send(cfg *CachetMonitor) error {
 	}
 
 	return nil
-}
-
-func (incident *Incident) GetComponentStatus(cfg *CachetMonitor) (int, error) {
-	resp, body, err := cfg.API.NewRequest("GET", "/components/"+strconv.Itoa(incident.ComponentID), nil)
-	if err != nil {
-		return 0, err
-	}
-
-	if resp.StatusCode != 200 {
-		return 0, fmt.Errorf("Invalid status code. Received %d", resp.StatusCode)
-	}
-
-	var data struct {
-		Status int `json:"status"`
-	}
-	if err := json.Unmarshal(body.Data, &data); err != nil {
-		return 0, fmt.Errorf("Cannot parse component body: %v. Err = %v", string(body.Data), err)
-	}
-
-	return data.Status, nil
 }
 
 // SetInvestigating sets status to Investigating
