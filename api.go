@@ -52,12 +52,33 @@ func (api CachetAPI) SendMetrics(metricname string, arr []int, val int64) {
 		})
 
 		resp, _, err := api.NewRequest("POST", "/metrics/"+strconv.Itoa(v)+"/points", jsonBytes)
+
+		logrus.Debugf("Sending %s metric ID:%d => %v, returns %d", metricname, v, val, resp.StatusCode)
+
 		if err != nil || resp.StatusCode != 200 {
 			logrus.Warnf("Could not log metric '%s' (id: %d, status: %d, err: %v)", metricname, v, resp.StatusCode, err)
 		}
 	}
 }
 
+// TODO: test
+// GetComponentData
+func (api CachetAPI) GetComponentData(compid int) (Component) {
+
+	logrus.Debugf("Getting data from component ID:%d", compid)
+
+	resp, body, err := api.NewRequest("GET", "/components/"+strconv.Itoa(compid), []byte(""))
+
+	if err != nil || resp.StatusCode != 200 {
+		logrus.Warnf("Could not get data from component (id: %d, status: %d, err: %v)", compid, resp.StatusCode, err)
+	}
+
+	var compInfo Component
+
+	err = json.Unmarshal(body.Data, &compInfo)
+
+	return compInfo
+}
 
 // TODO: test
 // NewRequest wraps http.NewRequest

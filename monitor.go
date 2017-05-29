@@ -19,6 +19,7 @@ type MonitorInterface interface {
 	tick(MonitorInterface)
 	test() bool
 
+	Init(*CachetMonitor)
 	Validate() []string
 	GetMonitor() *AbstractMonitor
 	Describe() []string
@@ -117,9 +118,24 @@ func (mon *AbstractMonitor) Describe() []string {
 	return features
 }
 
+func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
+	mon.config = cfg
+
+	compInfo := mon.config.API.GetComponentData(mon.ComponentID)
+
+	logrus.Infof("Current name: %s", compInfo.Name)
+	logrus.Infof("Current status: %d", compInfo.Status)
+
+	if compInfo.Status == 1 {
+		mon.history = append(mon.history, true)
+	} else {
+		mon.history = append(mon.history, false)
+	}
+}
+
 func (mon *AbstractMonitor) ClockStart(cfg *CachetMonitor, iface MonitorInterface, wg *sync.WaitGroup) {
 	wg.Add(1)
-	mon.config = cfg
+
 	mon.stopC = make(chan bool)
 	if cfg.Immediate {
 		mon.tick(iface)

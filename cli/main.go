@@ -100,6 +100,8 @@ func main() {
 		logrus.Infof("Starting Monitor #%d: ", index)
 		logrus.Infof("Features: \n - %v", strings.Join(monitor.Describe(), "\n - "))
 
+		monitor.Init(cfg)
+
 		go monitor.ClockStart(cfg, monitor, wg)
 	}
 
