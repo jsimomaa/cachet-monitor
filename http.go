@@ -65,6 +65,7 @@ func (monitor *HTTPMonitor) setBodyRegexp(errs []string) {
 
 // TODO: test
 func (monitor *HTTPMonitor) test() bool {
+
 	req, err := http.NewRequest(monitor.Method, monitor.Target, nil)
 	for k, v := range monitor.Headers {
 		req.Header.Add(k, v)
@@ -90,7 +91,7 @@ func (monitor *HTTPMonitor) test() bool {
 		return false
 	}
 
-	monitor.setBodyRegexp(nil	)
+	monitor.setBodyRegexp(nil)
 
 	if monitor.bodyRegexp != nil {
 		// check response body

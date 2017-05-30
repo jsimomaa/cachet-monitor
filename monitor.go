@@ -59,6 +59,7 @@ type AbstractMonitor struct {
 	// PerformanceThreshold sets the % limit above which this monitor will trigger degraded-performance
 	// PerformanceThreshold float32
 
+	globalStatusIsUp bool
 	history []bool
 	// lagHistory     []float32
 	lastFailReason string
@@ -123,13 +124,17 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 
 	compInfo := mon.config.API.GetComponentData(mon.ComponentID)
 
-	logrus.Infof("Current name: %s", compInfo.Name)
-	logrus.Infof("Current status: %d", compInfo.Status)
+	logrus.Infof("Current CachetHQ ID: %d", compInfo.ID)
+	logrus.Infof("Current CachetHQ name: %s", compInfo.Name)
+	logrus.Infof("Current CachetHQ status: %d", compInfo.Status)
 
-	if compInfo.Status == 1 {
-		mon.history = append(mon.history, true)
-	} else {
-		mon.history = append(mon.history, false)
+	mon.globalStatusIsUp = (compInfo.Status == 1)
+	mon.history = append(mon.history, mon.globalStatusIsUp)
+	if ! mon.globalStatusIsUp {
+		mon.incident,_ = compInfo.LoadCurrentIncident(cfg)
+		if mon.incident != nil {
+			logrus.Infof("Current incident ID: %v", mon.incident.ID)
+		}
 	}
 }
 
@@ -170,6 +175,9 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	lag := getMs() - reqStart
 
 	histSize := HistorySize
+	if len(mon.history) == histSize-1 {
+		logrus.Debugf("monitor %v is now fully operational", mon.Name)
+	}
 	if mon.ThresholdCount {
 		histSize = int(mon.Threshold)
 	}
@@ -203,6 +211,8 @@ func (mon *AbstractMonitor) AnalyseData() {
 		"monitor": mon.Name,
 		"time":    time.Now().Format(mon.config.DateFormat),
 	})
+	l.Debugf("Down count: %d, history: %d, percentage: %.2f", numDown, len(mon.history), t)
+	l.Debugf("Threshold: %d", int(mon.Threshold))
 	if numDown == 0 {
 		l.Printf("monitor is up")
 	} else if mon.ThresholdCount {
@@ -217,39 +227,55 @@ func (mon *AbstractMonitor) AnalyseData() {
 	}
 
 	if len(mon.history) != histSize {
-		// not saturated
+		// not yet saturated
 		return
 	}
 
 	triggered := (mon.ThresholdCount && numDown == int(mon.Threshold)) || (!mon.ThresholdCount && t > mon.Threshold)
+	l.Debugf("Triggered: %d", triggered)
+	l.Debugf("Monitor's current incident: %v", mon.incident)
 
-	if triggered && mon.incident == nil {
-		// create incident
-		tplData := getTemplateData(mon)
-		tplData["FailReason"] = mon.lastFailReason
+	if triggered {
 
-		subject, message := mon.Template.Investigating.Exec(tplData)
-		mon.incident = &Incident{
-			Name:        subject,
-			ComponentID: mon.ComponentID,
-			Message:     message,
-			Notify:      true,
+		if mon.incident == nil {
+			// create incident
+			mon.globalStatusIsUp = false
+			tplData := getTemplateData(mon)
+			tplData["FailReason"] = mon.lastFailReason
+
+			subject, message := mon.Template.Investigating.Exec(tplData)
+			mon.incident = &Incident{
+				Name:        subject,
+				ComponentID: mon.ComponentID,
+				Message:     message,
+				Notify:      true,
+			}
+
+			// is down, create an incident
+			l.Warnf("creating incident. Monitor is down: %v", mon.lastFailReason)
+			// set investigating status
+			mon.incident.SetInvestigating()
+			// create/update incident
+			if err := mon.incident.Send(mon.config); err != nil {
+				l.Printf("Error sending incident: %v", err)
+			}
 		}
-
-		// is down, create an incident
-		l.Warnf("creating incident. Monitor is down: %v", mon.lastFailReason)
-		// set investigating status
-		mon.incident.SetInvestigating()
-		// create/update incident
-		if err := mon.incident.Send(mon.config); err != nil {
-			l.Printf("Error sending incident: %v", err)
-		}
-
 		return
 	}
 
-	// still triggered or no incident
-	if triggered || mon.incident == nil {
+	// we are up to normal
+
+	// global status seems incorrect though we couldn't fid any prior incident
+	if ! mon.globalStatusIsUp && mon.incident == nil {
+		l.Info("Reseting component's status")
+		mon.globalStatusIsUp = true
+		mon.lastFailReason = ""
+		mon.incident = nil
+		mon.config.API.SetComponentStatus(mon.ComponentID, 1)
+		return
+	}
+
+	if mon.incident == nil {
 		return
 	}
 
@@ -270,4 +296,5 @@ func (mon *AbstractMonitor) AnalyseData() {
 
 	mon.lastFailReason = ""
 	mon.incident = nil
+	mon.globalStatusIsUp = true
 }

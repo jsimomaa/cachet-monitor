@@ -44,7 +44,7 @@ func (api CachetAPI) SendMetric(id int, lag int64) {
 // SendMetrics adds a data point to a cachet monitor
 func (api CachetAPI) SendMetrics(metricname string, arr []int, val int64) {
 	for _, v := range arr {
-		logrus.Debugf("Sending %s metric ID:%d => %v", metricname, v, val)
+		logrus.Infof("Sending %s metric ID:%d => %v", metricname, v, val)
 
 		jsonBytes, _ := json.Marshal(map[string]interface{}{
 			"value":     val,
@@ -64,10 +64,29 @@ func (api CachetAPI) SendMetrics(metricname string, arr []int, val int64) {
 // TODO: test
 // GetComponentData
 func (api CachetAPI) GetComponentData(compid int) (Component) {
-
 	logrus.Debugf("Getting data from component ID:%d", compid)
 
 	resp, body, err := api.NewRequest("GET", "/components/"+strconv.Itoa(compid), []byte(""))
+
+	if err != nil || resp.StatusCode != 200 {
+		logrus.Warnf("Could not get data from component (id: %d, status: %d, err: %v)", compid, resp.StatusCode, err)
+	}
+
+	var compInfo Component
+
+	err = json.Unmarshal(body.Data, &compInfo)
+
+	return compInfo
+}
+// SetComponentStatus
+func (api CachetAPI) SetComponentStatus(compid int, status int) (Component) {
+	logrus.Debugf("Setting new status (%d) to component ID:%d", status, compid)
+
+	jsonBytes, _ := json.Marshal(map[string]interface{}{
+		"status":     status,
+	})
+
+	resp, body, err := api.NewRequest("PUT", "/components/"+strconv.Itoa(compid), jsonBytes)
 
 	if err != nil || resp.StatusCode != 200 {
 		logrus.Warnf("Could not get data from component (id: %d, status: %d, err: %v)", compid, resp.StatusCode, err)
