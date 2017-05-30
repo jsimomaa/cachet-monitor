@@ -123,12 +123,12 @@ func (mon *HTTPMonitor) Validate() []string {
 
 	mon.Method = strings.ToUpper(mon.Method)
 	switch mon.Method {
-	case "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD":
-		break
-	case "":
-		mon.Method = "GET"
-	default:
-		errs = append(errs, "Unsupported HTTP method: "+mon.Method)
+		case "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD":
+			break
+		case "":
+			mon.Method = "GET"
+		default:
+			errs = append(errs, "Unsupported HTTP method: "+mon.Method)
 	}
 
 	return errs
