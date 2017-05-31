@@ -78,6 +78,7 @@ func (api CachetAPI) GetComponentData(compid int) (Component) {
 
 	return compInfo
 }
+
 // SetComponentStatus
 func (api CachetAPI) SetComponentStatus(compid int, status int) (Component) {
 	logrus.Debugf("Setting new status (%d) to component ID:%d", status, compid)

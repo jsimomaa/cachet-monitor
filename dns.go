@@ -92,6 +92,8 @@ func (monitor *DNSMonitor) test() bool {
 		}
 	}
 
+	monitor.triggerShellHook("on_success", monitor.ShellHook.OnSuccess, "")
+
 	return true
 }
 

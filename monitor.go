@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 	"strconv"
+	"os/exec"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -43,6 +44,12 @@ type AbstractMonitor struct {
 	// Metric stuff
 	Metrics struct {
 		ResponseTime []int	`mapstructure:"response_time"`
+	}
+
+	// ShellHook stuff
+	ShellHook struct {
+		OnSuccess string	`mapstructure:"on_success"`
+		OnFailure string	`mapstructure:"on_failure"`
 	}
 
 	// Templating stuff
@@ -115,6 +122,12 @@ func (mon *AbstractMonitor) Describe() []string {
 		features = append(features, "Name: "+mon.Name)
 	}
 	features = append(features, "Response time metrics: "+strconv.Itoa(len(mon.Metrics.ResponseTime)))
+	if len(mon.ShellHook.OnSuccess) > 0 {
+		features = append(features, "Has a 'on_success' shellhook")
+	}
+	if len(mon.ShellHook.OnFailure) > 0 {
+		features = append(features, "Has a 'on_failure' shellhook")
+	}
 
 	return features
 }
@@ -135,6 +148,20 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 		if mon.incident != nil {
 			logrus.Infof("Current incident ID: %v", mon.incident.ID)
 		}
+	}
+}
+
+func (mon *AbstractMonitor) triggerShellHook(hooktype string, hook string, data string) {
+	if len(hook) == 0 {
+		return
+	}
+	logrus.Debugf("Starting %s shellhook", hooktype)
+
+	cmd := exec.Command(hook, mon.Name, hooktype, data)
+    	err := cmd.Run()
+
+	if err != nil {
+	    logrus.Warnf("Error when processing shellhook '%s': %v", hooktype, err)
 	}
 }
 
@@ -186,7 +213,13 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 		mon.history = mon.history[len(mon.history)-(histSize-1):]
 	}
 	mon.history = append(mon.history, isUp)
+
 	mon.AnalyseData()
+
+	// Will trigger shellhook 'on_failure' as this isn't done in implementations
+	if ! isUp {
+		mon.triggerShellHook("on_failure", mon.ShellHook.OnFailure, "")
+	}
 
 	// report lag
 	if mon.MetricID > 0 {
