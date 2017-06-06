@@ -70,6 +70,7 @@ func (monitor *HTTPMonitor) test() bool {
 	for k, v := range monitor.Headers {
 		req.Header.Add(k, v)
 	}
+	req.Header.Set("User-Agent", "Cachet-Monitor")
 
 	transport := http.DefaultTransport.(*http.Transport)
 	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: monitor.Strict == false}
