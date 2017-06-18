@@ -94,11 +94,9 @@ func (monitor *HTTPMonitor) test() bool {
 
 	monitor.setBodyRegexp(nil)
 
-	var responseBody string
+	responseBody, err := ioutil.ReadAll(resp.Body)
 
 	if monitor.bodyRegexp != nil {
-		// check response body
-		responseBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			monitor.lastFailReason = err.Error()
 			return false
@@ -109,7 +107,7 @@ func (monitor *HTTPMonitor) test() bool {
 		}
 	}
 
-	monitor.triggerShellHook("on_success", monitor.ShellHook.OnSuccess, responseBody)
+	monitor.triggerShellHook("on_success", monitor.ShellHook.OnSuccess, string(responseBody))
 
 	return true
 }
