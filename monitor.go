@@ -156,8 +156,9 @@ func (mon *AbstractMonitor) triggerShellHook(hooktype string, hook string, data 
 		return
 	}
 	logrus.Debugf("Starting %s shellhook", hooktype)
+	logrus.Debugf("Data: %s", data)
 
-	cmd := exec.Command(hook, mon.Name, hooktype, data)
+	cmd := exec.Command(hook, mon.Name, strconv.Itoa(mon.ComponentID), mon.Target, hooktype, data)
     	err := cmd.Run()
 
 	if err != nil {
