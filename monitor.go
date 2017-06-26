@@ -44,6 +44,8 @@ type AbstractMonitor struct {
 	// Metric stuff
 	Metrics struct {
 		ResponseTime []int	`mapstructure:"response_time"`
+		Availability []int	`mapstructure:"availability"`
+		IncidentCount []int	`mapstructure:"incident_count"`
 	}
 
 	// ShellHook stuff
@@ -121,6 +123,8 @@ func (mon *AbstractMonitor) Describe() []string {
 	if len(mon.Name) > 0 {
 		features = append(features, "Name: "+mon.Name)
 	}
+	features = append(features, "Availability count metrics: "+strconv.Itoa(len(mon.Metrics.Availability)))
+	features = append(features, "Incident count metrics: "+strconv.Itoa(len(mon.Metrics.IncidentCount)))
 	features = append(features, "Response time metrics: "+strconv.Itoa(len(mon.Metrics.ResponseTime)))
 	if len(mon.ShellHook.OnSuccess) > 0 {
 		features = append(features, "Has a 'on_success' shellhook")
@@ -249,10 +253,11 @@ func (mon *AbstractMonitor) AnalyseData() {
 	l.Debugf("Threshold: %d", int(mon.Threshold))
 	if numDown == 0 {
 		l.Printf("monitor is up")
+		go mon.config.API.SendMetrics("availability", mon.Metrics.Availability, 1)
 	} else if mon.ThresholdCount {
-		l.Printf("monitor down %d/%d", numDown, int(mon.Threshold))
+		l.Printf("monitor down (down count=%d, threshold=%d)", t, mon.Threshold)
 	} else {
-		l.Printf("monitor down %.2f%%/%.2f%%", t, mon.Threshold)
+		l.Printf("monitor down (down percentage=%.2f%%, threshold=%.2f%%)", t, mon.Threshold)
 	}
 
 	histSize := HistorySize
@@ -270,6 +275,8 @@ func (mon *AbstractMonitor) AnalyseData() {
 	l.Debugf("Monitor's current incident: %v", mon.incident)
 
 	if triggered {
+		// Process metric
+		go mon.config.API.SendMetrics("incident count", mon.Metrics.IncidentCount, 1)
 
 		if mon.incident == nil {
 			// create incident
