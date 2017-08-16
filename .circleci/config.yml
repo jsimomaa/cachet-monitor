@@ -1,4 +1,8 @@
 version: 2
+
+machine:
+  timezone: Europe/Paris
+
 jobs:
   build:
     working_directory: /go/src/github.com/veekeefr/cachet-monitor
