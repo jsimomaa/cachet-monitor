@@ -17,23 +17,23 @@ jobs:
           name: Checking GO version...
           command: go version
       - run:
-          name: Checking directory...
-          command: ls -l
-      - run:
           name: Downloading dependencies...
           command: go get .
       - run:
           name: Building...
           command: go build -o cachet_monitor
+      - run:
+          name: Checking delivery...
+          command: ls -l cachet_monitor
 
   test:
-    working_directory: /go/src/cachet
+    working_directory: /go/src/cachet/cli
     docker:
       - image: circleci/golang:1.8
     steps:
       - run:
           name: Listing build version...
-          command: cd cli ; ./cachet_monitor --version
+          command: ./cachet_monitor --version
 
 workflows:
   version: 2
@@ -41,5 +41,5 @@ workflows:
     jobs:
       - build
       - test:
-          requires:	
+          requires:
             - build
