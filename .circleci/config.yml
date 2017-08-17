@@ -18,6 +18,9 @@ jobs:
           name: Checking directory...
           command: ls -l
       - run:
+          name: Downloading dependencies...
+          command: go get .
+      - run:
           name: Building...
           command: go build -o cachet_monitor
 
