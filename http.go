@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Sirupsen/logrus"
 )
 
 // Investigating template
@@ -64,7 +66,7 @@ func (monitor *HTTPMonitor) setBodyRegexp(errs []string) {
 }
 
 // TODO: test
-func (monitor *HTTPMonitor) test() bool {
+func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 
 	req, err := http.NewRequest(monitor.Method, monitor.Target, nil)
 	for k, v := range monitor.Headers {
@@ -82,6 +84,7 @@ func (monitor *HTTPMonitor) test() bool {
 	resp, err := client.Do(req)
 	if err != nil {
 		monitor.lastFailReason = err.Error()
+		l.Infof("HTTP call failure: %s", monitor.lastFailReason)
 		return false
 	}
 
@@ -89,6 +92,7 @@ func (monitor *HTTPMonitor) test() bool {
 
 	if monitor.ExpectedStatusCode > 0 && resp.StatusCode != monitor.ExpectedStatusCode {
 		monitor.lastFailReason = "Expected HTTP response status: " + strconv.Itoa(monitor.ExpectedStatusCode) + ", got: " + strconv.Itoa(resp.StatusCode)
+		l.Infof("%s", monitor.lastFailReason)
 		return false
 	}
 
@@ -99,15 +103,17 @@ func (monitor *HTTPMonitor) test() bool {
 	if monitor.bodyRegexp != nil {
 		if err != nil {
 			monitor.lastFailReason = err.Error()
+			l.Infof("HTTP response error: %s", monitor.lastFailReason)
 			return false
 		}
 		if !monitor.bodyRegexp.Match(responseBody) {
 			monitor.lastFailReason = "Unexpected body: " + string(responseBody) + ".\nExpected to match: " + monitor.internalBodyRegexp
+			l.Infof("HTTP response error: Unexpected body")
 			return false
 		}
 	}
 
-	monitor.triggerShellHook("on_success", monitor.ShellHook.OnSuccess, string(responseBody))
+	monitor.triggerShellHook(l, "on_success", monitor.ShellHook.OnSuccess, string(responseBody))
 
 	return true
 }

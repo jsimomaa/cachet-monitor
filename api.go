@@ -37,14 +37,14 @@ func (api CachetAPI) Ping() error {
 }
 
 // SendMetric adds a data point to a cachet monitor - Deprecated
-func (api CachetAPI) SendMetric(id int, lag int64) {
-	api.SendMetrics("lag", []int { id }, lag)
+func (api CachetAPI) SendMetric(l *logrus.Entry, id int, lag int64) {
+	api.SendMetrics(l, "lag", []int { id }, lag)
 }
 
 // SendMetrics adds a data point to a cachet monitor
-func (api CachetAPI) SendMetrics(metricname string, arr []int, val int64) {
+func (api CachetAPI) SendMetrics(l *logrus.Entry, metricname string, arr []int, val int64) {
 	for _, v := range arr {
-		logrus.Infof("Sending %s metric ID:%d => %v", metricname, v, val)
+		l.Infof("Sending %s metric ID:%d => %v", metricname, v, val)
 
 		jsonBytes, _ := json.Marshal(map[string]interface{}{
 			"value":     val,
@@ -54,9 +54,9 @@ func (api CachetAPI) SendMetrics(metricname string, arr []int, val int64) {
 		resp,_,_ := api.NewRequest("POST", "/metrics/"+strconv.Itoa(v)+"/points", jsonBytes)
 
 		if resp != nil {
-			logrus.Debugf("Sending %s metric ID:%d => %v, returns %d", metricname, v, val, resp.StatusCode)
+			l.Debugf("Sending %s metric ID:%d => %v, returns %d", metricname, v, val, resp.StatusCode)
 		} else {
-			logrus.Debugf("Sending %s metric ID:%d => %v, no return", metricname, v, val)
+			l.Debugf("Sending %s metric ID:%d => %v, no return", metricname, v, val)
 		}
 	}
 }

@@ -18,7 +18,7 @@ type MonitorInterface interface {
 	ClockStart(*CachetMonitor, MonitorInterface, *sync.WaitGroup)
 	ClockStop()
 	tick(MonitorInterface)
-	test() bool
+	test(l *logrus.Entry) bool
 
 	Init(*CachetMonitor)
 	Validate() []string
@@ -155,18 +155,17 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 	}
 }
 
-func (mon *AbstractMonitor) triggerShellHook(hooktype string, hook string, data string) {
+func (mon *AbstractMonitor) triggerShellHook(l *logrus.Entry, hooktype string, hook string, data string) {
 	if len(hook) == 0 {
 		return
 	}
-	logrus.Debugf("Starting %s shellhook", hooktype)
-	logrus.Debugf("Data: %s", data)
+	l.Infof("Sending '%s' shellhook", hooktype)
+	l.Debugf("Data: %s", data)
 
-	cmd := exec.Command(hook, mon.Name, strconv.Itoa(mon.ComponentID), mon.Target, hooktype, data)
-    	err := cmd.Run()
-
+	out, err := exec.Command(hook, mon.Name, strconv.Itoa(mon.ComponentID), mon.Target, hooktype, data).Output()
 	if err != nil {
-	    logrus.Warnf("Error when processing shellhook '%s': %v", hooktype, err)
+	    l.Warnf("Error when processing shellhook '%s': %s", hooktype, err)
+	    l.Warnf("Command output: %s", out)
 	}
 }
 
@@ -199,16 +198,19 @@ func (mon *AbstractMonitor) ClockStop() {
 	}
 }
 
-func (mon *AbstractMonitor) test() bool { return false }
+func (mon *AbstractMonitor) test(l *logrus.Entry) bool { return false }
 
 func (mon *AbstractMonitor) tick(iface MonitorInterface) {
+	l := logrus.WithFields(logrus.Fields{
+		"monitor": mon.Name })
+
 	reqStart := getMs()
-	isUp := iface.test()
+	isUp := iface.test(l)
 	lag := getMs() - reqStart
 
 	histSize := HistorySize
 	if len(mon.history) == histSize-1 {
-		logrus.Debugf("monitor %v is now fully operational", mon.Name)
+		l.Debugf("monitor %v is now fully operational", mon.Name)
 	}
 	if mon.ThresholdCount {
 		histSize = int(mon.Threshold)
@@ -219,23 +221,23 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	}
 	mon.history = append(mon.history, isUp)
 
-	mon.AnalyseData()
+	mon.AnalyseData(l)
 
 	// Will trigger shellhook 'on_failure' as this isn't done in implementations
 	if ! isUp {
-		mon.triggerShellHook("on_failure", mon.ShellHook.OnFailure, "")
+		mon.triggerShellHook(l, "on_failure", mon.ShellHook.OnFailure, "")
 	}
 
 	// report lag
 	if mon.MetricID > 0 {
-		go mon.config.API.SendMetric(mon.MetricID, lag)
+		go mon.config.API.SendMetric(l, mon.MetricID, lag)
 	}
-	go mon.config.API.SendMetrics("response time", mon.Metrics.ResponseTime, lag)
+	go mon.config.API.SendMetrics(l, "response time", mon.Metrics.ResponseTime, lag)
 }
 
 // TODO: test
 // AnalyseData decides if the monitor is statistically up or down and creates / resolves an incident
-func (mon *AbstractMonitor) AnalyseData() {
+func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	// look at the past few incidents
 	numDown := 0
 	for _, wasUp := range mon.history {
@@ -245,15 +247,11 @@ func (mon *AbstractMonitor) AnalyseData() {
 	}
 
 	t := (float32(numDown) / float32(len(mon.history))) * 100
-	l := logrus.WithFields(logrus.Fields{
-		"monitor": mon.Name,
-		"time":    time.Now().Format(mon.config.DateFormat),
-	})
 	l.Debugf("Down count: %d, history: %d, percentage: %.2f", numDown, len(mon.history), t)
 	l.Debugf("Threshold: %d", int(mon.Threshold))
 	if numDown == 0 {
 		l.Printf("monitor is up")
-		go mon.config.API.SendMetrics("availability", mon.Metrics.Availability, 1)
+		go mon.config.API.SendMetrics(l, "availability", mon.Metrics.Availability, 1)
 	} else if mon.ThresholdCount {
 		l.Printf("monitor down (down count=%d, threshold=%d)", t, mon.Threshold)
 	} else {
@@ -276,7 +274,7 @@ func (mon *AbstractMonitor) AnalyseData() {
 
 	if triggered {
 		// Process metric
-		go mon.config.API.SendMetrics("incident count", mon.Metrics.IncidentCount, 1)
+		go mon.config.API.SendMetrics(l, "incident count", mon.Metrics.IncidentCount, 1)
 
 		if mon.incident == nil {
 			// create incident
