@@ -5,17 +5,21 @@ machine:
 
 jobs:
   build:
-    working_directory: /go/src/github.com/veekeefr/cachet-monitor
+    working_directory: ~/repo/cachet-monitor/cli
     docker:
       - image: circleci/golang:1.8
     steps:
       - checkout
+          path: ~/repo/cachet-monitor
       - run:
           name: Checking GO version...
           command: go version
       - run:
+          name: Checking directory...
+          command: ls -l
+      - run:
           name: Building...
-          command: cd cli ; go build -o cachet_monitor
+          command: go build -o cachet_monitor
 
   test:
     working_directory: /go/src/github.com/veekeefr/cachet-monitor
