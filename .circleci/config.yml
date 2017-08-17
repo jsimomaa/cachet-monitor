@@ -5,14 +5,14 @@ machine:
 
 jobs:
   build:
-    working_directory: ~/repo/src/cachet/cli
+    working_directory: /go/src/cachet/cli
     docker:
       - image: circleci/golang:1.8
         environment:
-          GOPATH: ~/repo/src
+          GOPATH: /go
     steps:
       - checkout:
-          path: ~/repo/src/cachet
+          path: /go/src/cachet
       - run:
           name: Checking GO version...
           command: go version
@@ -27,7 +27,7 @@ jobs:
           command: go build -o cachet_monitor
 
   test:
-    working_directory: /go/src/github.com/veekeefr/cachet-monitor
+    working_directory: /go/src/cachet
     docker:
       - image: circleci/golang:1.8
     steps:
