@@ -9,7 +9,7 @@ jobs:
     docker:
       - image: circleci/golang:1.8
     steps:
-      - checkout
+      - checkout:
           path: ~/repo/cachet-monitor
       - run:
           name: Checking GO version...
@@ -35,3 +35,4 @@ workflows:
   build_and_test:
     jobs:
       - build
+      - test
