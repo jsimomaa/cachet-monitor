@@ -11,8 +11,20 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Building...
+          name: Checking GO version...
           command: go version
+      - run:
+          name: Building...
+          command: cd cli ; go build -o cachet_monitor
+
+  test:
+    working_directory: /go/src/github.com/veekeefr/cachet-monitor
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - run:
+          name: Listing build version...
+          command: cd cli ; ./cachet_monitor --version
 
 workflows:
   version: 2
