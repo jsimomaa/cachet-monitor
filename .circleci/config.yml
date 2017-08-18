@@ -1,6 +1,8 @@
 version: 2
 
 machine:
+  services:
+    - docker
   timezone: Europe/Paris
 
 jobs:
@@ -25,15 +27,25 @@ jobs:
       - run:
           name: Checking delivery...
           command: ls -l cachet_monitor
+      - save_cache:
+          key: cachet-monitory-delivery-cache-{{ checksum "cachet_monitor" }}
+          paths:
+            - /go/src/cachet/cli
 
   test:
     working_directory: /go/src/cachet/cli
     docker:
       - image: circleci/golang:1.8
     steps:
+      - restore-cache:
+          keys:
+            - cachet-monitory-delivery-cache-
       - run:
           name: Listing build version...
           command: ./cachet_monitor --version
+      - store_artifacts:
+          path: /go/src/cachet/cli/cachet_monitor
+          destination: artifact-file
 
 workflows:
   version: 2
