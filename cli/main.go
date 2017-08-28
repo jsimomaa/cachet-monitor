@@ -24,7 +24,15 @@ const usage = `cachet-monitor
 
 Usage:
   cachet-monitor (-c PATH | --config PATH) [--log=LOGPATH] [--name=NAME] [--immediate]
+  cachet-monitor (-c PATH | --config PATH)
   cachet-monitor -h | --help | --version
+
+Options:
+  -h --help                      Show this screen.
+  -c PATH.json --config PATH     Path to configuration file
+  [--log]		         Sets log file
+  [--version]                    Show version
+  [--immediate]                  Tick immediately (by default waits for first defined interval)
 
 Arguments:
   PATH     path to config.json
@@ -34,13 +42,7 @@ Arguments:
 Examples:
   cachet-monitor -c /root/cachet-monitor.json
   cachet-monitor -c /root/cachet-monitor.json --log=/var/log/cachet-monitor.log --name="development machine"
-
-Options:
-  -c PATH.json --config PATH     Path to configuration file
-  -h --help                      Show this screen.
-  --version                      Show version
-  --immediate                    Tick immediately (by default waits for first defined interval)
-
+  cachet-monitor -c /root/cachet-monitor.json --log=/var/log/cachet-monitor.log
 
 Environment variables:
   CACHET_API      override API url from configuration
