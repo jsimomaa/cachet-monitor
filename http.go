@@ -74,12 +74,15 @@ func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 	}
 	req.Header.Set("User-Agent", "Cachet-Monitor")
 
-	transport := http.DefaultTransport.(*http.Transport)
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: monitor.Strict == false}
 	client := &http.Client{
 		Timeout:   time.Duration(monitor.Timeout * time.Second),
-		Transport: transport,
+		Transport: &http.Transport{
+	                TLSClientConfig: &tls.Config{
+	                        InsecureSkipVerify: (! monitor.Strict),
+	                },
+		 },
 	}
+	l.Infof("InsecureSkipVerify: %b???", (! monitor.Strict))
 
 	resp, err := client.Do(req)
 	if err != nil {
