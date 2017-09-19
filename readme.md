@@ -47,6 +47,11 @@ monitors:
       fixed:
         subject: "I HAVE BEEN FIXED"
     
+    # launch script depending on event (failed or successful check)
+    shellhook:
+        on_success: /fullpath/shellhook_onsuccess.sh
+        on_failure: /fullpath/shellhook_onfailure.sh
+
     # seconds between checks
     interval: 1
     # seconds for timeout
@@ -95,11 +100,13 @@ pro tip: run in background using `nohup cachet-monitor 2>&1 > /var/log/cachet-mo
 
 ```
 Usage:
-  cachet-monitor (-c PATH | --config PATH) [--log=LOGPATH] [--name=NAME] [--immediate]
+  cachet-monitor (-c PATH | --config PATH)
+  cachet-monitor (-c PATH | --config PATH) [--log=LOGPATH] [--name=NAME] [--immediate] [--log-level=LOGLEVEL]
   cachet-monitor -h | --help | --version
 
 Arguments:
   PATH     path to config.json
+  LOGLEVEL log level (debug, info, warn, error or fatal)
   LOGPATH  path to log output (defaults to STDOUT)
   NAME     name of this logger
 
@@ -108,10 +115,12 @@ Examples:
   cachet-monitor -c /root/cachet-monitor.json --log=/var/log/cachet-monitor.log --name="development machine"
 
 Options:
-  -c PATH.json --config PATH     Path to configuration file
   -h --help                      Show this screen.
-  --version                      Show version
-  --immediate                    Tick immediately (by default waits for first defined interval)
+  -c PATH.json --config PATH     Path to configuration file
+  [--log]		                 Sets log file
+  [--log-level]		         Sets log level
+  [--version]                      Show version
+  [--immediate]                    Tick immediately (by default waits for first defined interval)
   
 Environment varaibles:
   CACHET_API      override API url from configuration
