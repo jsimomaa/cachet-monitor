@@ -64,6 +64,9 @@ type AbstractMonitor struct {
 	Threshold      float32
 	ThresholdCount bool `mapstructure:"threshold_count"`
 
+	CriticalThreshold      float32 `mapstructure:"threshold_critical"`
+	CriticalThresholdCount bool `mapstructure:"threshold_critical_count"`
+
 	// lag / average(lagHistory) * 100 = percentage above average lag
 	// PerformanceThreshold sets the % limit above which this monitor will trigger degraded-performance
 	// PerformanceThreshold float32
@@ -265,6 +268,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 
 	if len(mon.history) != histSize {
 		// not yet saturated
+		l.Debugf("Component's history has not been yet saturated (stack: %d/%d)", len(mon.history), histSize)
 		return
 	}
 
