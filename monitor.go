@@ -292,8 +292,8 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 
 	l.Debugf("Down counter: %d", numDown)
 	l.Debugf("Down percentage: %f", t)
-	l.Debugf("Triggered: %b", triggered)
-	l.Debugf("Critically Triggered: %b", criticalTriggered)
+	l.Debugf("Triggered: %t", triggered)
+	l.Debugf("Critically Triggered: %t", criticalTriggered)
 	l.Debugf("Monitor's current incident: %v", mon.incident)
 
 	if triggered {

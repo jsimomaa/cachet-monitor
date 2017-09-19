@@ -82,7 +82,7 @@ func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 	                },
 		 },
 	}
-	l.Infof("InsecureSkipVerify: %b???", (! monitor.Strict))
+	l.Debugf("InsecureSkipVerify: %t", (! monitor.Strict))
 
 	resp, err := client.Do(req)
 	if err != nil {
