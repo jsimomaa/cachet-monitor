@@ -80,18 +80,19 @@ func (api CachetAPI) GetComponentData(compid int) (Component) {
 }
 
 // SetComponentStatus
-func (api CachetAPI) SetComponentStatus(compid int, status int) (Component) {
-	logrus.Debugf("Setting new status (%d) to component ID:%d", status, compid)
+func (api CachetAPI) SetComponentStatus(comp *AbstractMonitor, status int) (Component) {
+	logrus.Debugf("Setting new status (%d) to component ID: %d (instead of %d)", status, comp.ComponentID, comp.currentStatus)
 
 	jsonBytes, _ := json.Marshal(map[string]interface{}{
 		"status":     status,
 	})
 
-	resp, body, err := api.NewRequest("PUT", "/components/"+strconv.Itoa(compid), jsonBytes)
+	resp, body, err := api.NewRequest("PUT", "/components/"+strconv.Itoa(comp.ComponentID), jsonBytes)
 
 	if err != nil || resp.StatusCode != 200 {
-		logrus.Warnf("Could not get data from component (id: %d, status: %d, err: %v)", compid, resp.StatusCode, err)
+		logrus.Warnf("Could not get data from component (id: %d, status: %d, err: %v)", comp.ComponentID, resp.StatusCode, err)
 	}
+	comp.currentStatus = status
 
 	var compInfo Component
 

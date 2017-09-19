@@ -71,7 +71,7 @@ type AbstractMonitor struct {
 	// PerformanceThreshold sets the % limit above which this monitor will trigger degraded-performance
 	// PerformanceThreshold float32
 
-	globalStatusIsUp bool
+	currentStatus	int
 	history []bool
 	// lagHistory     []float32
 	lastFailReason string
@@ -148,9 +148,9 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 	logrus.Infof("Current CachetHQ name: %s", compInfo.Name)
 	logrus.Infof("Current CachetHQ status: %d", compInfo.Status)
 
-	mon.globalStatusIsUp = (compInfo.Status == 1)
-	mon.history = append(mon.history, mon.globalStatusIsUp)
-	if ! mon.globalStatusIsUp {
+	mon.currentStatus = compInfo.Status
+	mon.history = append(mon.history, mon.isUp())
+	if ! mon.isUp() {
 		mon.incident,_ = compInfo.LoadCurrentIncident(cfg)
 		if mon.incident != nil {
 			logrus.Infof("Current incident ID: %v", mon.incident.ID)
@@ -199,6 +199,10 @@ func (mon *AbstractMonitor) ClockStop() {
 	default:
 		close(mon.stopC)
 	}
+}
+
+func (mon *AbstractMonitor) isUp() bool {
+	return (mon.currentStatus == 1)
 }
 
 func (mon *AbstractMonitor) test(l *logrus.Entry) bool { return false }
@@ -272,8 +276,20 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 		return
 	}
 
-	triggered := (mon.ThresholdCount && numDown == int(mon.Threshold)) || (!mon.ThresholdCount && t > mon.Threshold)
-	l.Debugf("Triggered: %d", triggered)
+	triggered := false
+	if mon.ThresholdCount || mon.Threshold > 0 {
+		triggered = (mon.ThresholdCount && numDown == int(mon.Threshold)) || (!mon.ThresholdCount && t > mon.Threshold)
+	}
+	
+	criticalTriggered := false
+	if mon.CriticalThresholdCount || mon.CriticalThreshold > 0 {
+		criticalTriggered = (mon.CriticalThresholdCount && numDown == int(mon.CriticalThreshold)) || (!mon.CriticalThresholdCount && t > mon.CriticalThreshold)
+	}
+
+	l.Debugf("Down counter: %d", numDown)
+	l.Debugf("Down percentage: %f", t)
+	l.Debugf("Triggered: %b", triggered)
+	l.Debugf("Critically Triggered: %b", criticalTriggered)
 	l.Debugf("Monitor's current incident: %v", mon.incident)
 
 	if triggered {
@@ -282,7 +298,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 
 		if mon.incident == nil {
 			// create incident
-			mon.globalStatusIsUp = false
+			mon.currentStatus = 2
 			tplData := getTemplateData(mon)
 			tplData["FailReason"] = mon.lastFailReason
 
@@ -303,18 +319,22 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 				l.Printf("Error sending incident: %v", err)
 			}
 		}
+		if criticalTriggered {
+			if (mon.currentStatus != 4) {
+				mon.config.API.SetComponentStatus(mon, 4)
+			}
+		}
 		return
 	}
 
 	// we are up to normal
 
 	// global status seems incorrect though we couldn't fid any prior incident
-	if ! mon.globalStatusIsUp && mon.incident == nil {
+	if ! mon.isUp() && mon.incident == nil {
 		l.Info("Reseting component's status")
-		mon.globalStatusIsUp = true
 		mon.lastFailReason = ""
 		mon.incident = nil
-		mon.config.API.SetComponentStatus(mon.ComponentID, 1)
+		mon.config.API.SetComponentStatus(mon, 1)
 		return
 	}
 
@@ -339,5 +359,5 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 
 	mon.lastFailReason = ""
 	mon.incident = nil
-	mon.globalStatusIsUp = true
+	mon.currentStatus = 1
 }

@@ -24,7 +24,8 @@
       },
       "interval": 1,
       "timeout": 1,
-      "threshold": 80,
+      "threshold": 50,
+      "threshold_critical": 80,
       "headers": {
         "Authorization": "Basic <hash>"
       },

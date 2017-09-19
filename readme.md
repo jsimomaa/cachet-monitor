@@ -52,7 +52,9 @@ monitors:
     # seconds for timeout
     timeout: 1
     # If % of downtime is over this threshold, open an incident
-    threshold: 80
+    threshold: 50
+    # If % of downtime is over this threshold, set component's status as "Major Outage"
+    threshold_critical: 80
 
     # custom HTTP headers
     headers:
