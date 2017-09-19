@@ -108,6 +108,10 @@ func (mon *AbstractMonitor) Validate() []string {
 		mon.Threshold = 100
 	}
 
+	if mon.CriticalThreshold <= 0 {
+		mon.CriticalThreshold = 100
+	}
+
 	if err := mon.Template.Fixed.Compile(); err != nil {
 		errs = append(errs, "Could not compile \"fixed\" template: "+err.Error())
 	}
