@@ -147,6 +147,7 @@ func (mon *HTTPMonitor) Validate() []string {
 func (mon *HTTPMonitor) Describe() []string {
 	features := mon.AbstractMonitor.Describe()
 	features = append(features, "Method: "+mon.Method)
+	features = append(features, "Insecure: "+ strconv.FormatBool(!mon.Strict))
 
 	return features
 }
