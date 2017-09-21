@@ -258,8 +258,6 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	}
 
 	t := (float32(numDown) / float32(len(mon.history))) * 100
-	l.Debugf("Down count: %d, history: %d, percentage: %.2f", numDown, len(mon.history), t)
-	l.Debugf("Threshold: %d", int(mon.Threshold))
 	if numDown == 0 {
 		l.Printf("monitor is up")
 		go mon.config.API.SendMetrics(l, "availability", mon.Metrics.Availability, 1)
@@ -289,8 +287,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	if mon.CriticalThresholdCount || mon.CriticalThreshold > 0 {
 		criticalTriggered = (mon.CriticalThresholdCount && numDown == int(mon.CriticalThreshold)) || (!mon.CriticalThresholdCount && t > mon.CriticalThreshold)
 	}
-
-	l.Debugf("Down counter: %d", numDown)
+	l.Debugf("Down count: %d, history: %d, percentage: %.2f", numDown, len(mon.history), t)
 	l.Debugf("Down percentage: %d", t)
 	l.Debugf("Triggered: %t", triggered)
 	l.Debugf("Critically Triggered: %t", criticalTriggered)
