@@ -291,7 +291,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	}
 
 	l.Debugf("Down counter: %d", numDown)
-	l.Debugf("Down percentage: %f", t)
+	l.Debugf("Down percentage: %d", t)
 	l.Debugf("Triggered: %t", triggered)
 	l.Debugf("Critically Triggered: %t", criticalTriggered)
 	l.Debugf("Monitor's current incident: %v", mon.incident)
@@ -318,7 +318,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 			l.Warnf("creating incident. Monitor is down: %v", mon.lastFailReason)
 			// set investigating status
 			mon.incident.SetInvestigating()
-			// create/update incident
+			// create incident and set component's status
 			if err := mon.incident.Send(mon.config); err != nil {
 				l.Printf("Error sending incident: %v", err)
 			}
