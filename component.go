@@ -3,7 +3,8 @@ package cachet
 import (
 	"encoding/json"
 	"strconv"
-	"fmt"
+
+	"github.com/Sirupsen/logrus"
 )
 
 // Component Cachet data model
@@ -24,7 +25,7 @@ func (comp *Component) LoadCurrentIncident(cfg *CachetMonitor) (*Incident, error
 	incidentInfoA := []Incident{}
 
 	if e := json.Unmarshal(body.Data, &incidentInfoA); e != nil {
-	        fmt.Printf("Error decoding JSON: %v\n", e)
+	        logrus.Warnf("Error decoding JSON: %v\n", e)
 	}
 
 	if len(incidentInfoA) == 0 {
