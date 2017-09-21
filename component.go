@@ -16,7 +16,7 @@ type Component struct {
 
 // LoadCurrentIncident - Returns current incident
 func (comp *Component) LoadCurrentIncident(cfg *CachetMonitor) (*Incident, error) {
-	resp, body, err := cfg.API.NewRequest("GET", "/incidents?component_id="+strconv.Itoa(comp.ID), []byte(""))
+	resp, body, err := cfg.API.NewRequest("GET", "/incidents?component_id="+strconv.Itoa(comp.ID)+"&status=1&per_page=1", []byte(""))
 
 	if err != nil || resp.StatusCode != 200 {
 		return nil, err

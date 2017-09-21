@@ -154,11 +154,9 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 
 	mon.currentStatus = compInfo.Status
 	mon.history = append(mon.history, mon.isUp())
-	if ! mon.isUp() {
-		mon.incident,_ = compInfo.LoadCurrentIncident(cfg)
-		if mon.incident != nil {
-			logrus.Infof("Current incident ID: %v", mon.incident.ID)
-		}
+	mon.incident,_ = compInfo.LoadCurrentIncident(cfg)
+	if mon.incident != nil {
+		logrus.Infof("Current incident ID: %v", mon.incident.ID)
 	}
 }
 
@@ -344,7 +342,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	}
 
 	// was down, created an incident, its now ok, make it resolved.
-	l.Warn("Resolving incident")
+	l.Infof("Resolving incident")
 
 	// resolve incident
 	tplData := getTemplateData(mon)
@@ -355,7 +353,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	mon.incident.Message = message
 	mon.incident.SetFixed()
 	if err := mon.incident.Send(mon.config); err != nil {
-		l.Printf("Error sending incident: %v", err)
+		l.Warnf("Error updating sending incident: %v", err)
 	}
 
 	mon.lastFailReason = ""
