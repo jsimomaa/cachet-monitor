@@ -47,6 +47,18 @@ jobs:
           path: /go/src/cachet/cli/cachet_monitor
           destination: artifact-file
 
+  release:
+    working_directory: /go/src/cachet/cli
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - restore-cache:
+          keys:
+            - cachet-monitory-delivery-cache-
+      - run:
+          name: GitHub Release...
+          command: ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --replace ${CIRCLE_BRANCH} ./
+
 workflows:
   version: 2
   build_and_test:
@@ -55,3 +67,7 @@ workflows:
       - test:
           requires:
             - build
+      - release:
+          requires:
+            - build
+            - test
