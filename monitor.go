@@ -286,7 +286,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 		criticalTriggered = (mon.CriticalThresholdCount && numDown == int(mon.CriticalThreshold)) || (!mon.CriticalThresholdCount && t > mon.CriticalThreshold)
 	}
 	l.Debugf("Down count: %d, history: %d, percentage: %.2f", numDown, len(mon.history), t)
-	l.Debugf("Down percentage: %d", t)
+	l.Debugf("Down percentage: %.2f%%", t)
 	l.Debugf("Triggered: %t", triggered)
 	l.Debugf("Critically Triggered: %t", criticalTriggered)
 	l.Debugf("Monitor's current incident: %v", mon.incident)
