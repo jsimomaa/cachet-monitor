@@ -63,7 +63,12 @@ jobs:
           command: mkdir ./dist && mv ./cachet_monitor ./dist
       - run:
           name: GitHub Release...
-          command: ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --replace ${CIRCLE_BRANCH} ./dist
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "snapshot" ]; then
+              ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --prerelease --replace ${CIRCLE_BRANCH} ./dist
+            else
+              ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --replace ${CIRCLE_BRANCH} ./dist
+            fi
 
 workflows:
   version: 2
