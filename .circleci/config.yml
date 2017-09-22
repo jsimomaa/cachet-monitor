@@ -59,8 +59,11 @@ jobs:
           name: Downloading GitHub Release...
           command: wget -O./ghr.zip https://github.com/tcnksm/ghr/releases/download/v0.5.4/ghr_v0.5.4_linux_amd64.zip && unzip ghr.zip && chmod +x ./ghr
       - run:
+          name: Preparing release...
+          command: mkdir ./dist && mv ./cachet_monitor ./dist
+      - run:
           name: GitHub Release...
-          command: ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --replace ${CIRCLE_BRANCH} ./
+          command: ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --replace ${CIRCLE_BRANCH} ./dist
 
 workflows:
   version: 2
