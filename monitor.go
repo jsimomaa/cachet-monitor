@@ -342,7 +342,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	}
 
 	// was down, created an incident, its now ok, make it resolved.
-	l.Infof("Resolving incident")
+	l.Infof("Resolving incident %d", mon.incident.ID)
 
 	// resolve incident
 	tplData := getTemplateData(mon)
