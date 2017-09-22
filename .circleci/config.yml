@@ -23,7 +23,7 @@ jobs:
           command: go get .
       - run:
           name: Building...
-          command: go build -o cachet_monitor
+          command: go build -ldflags "-X main.AppBranch=${CIRCLE_BRANCH} -X main.Build=${CIRCLE_SHA1} -X main.BuildDate=`date +%Y-%m-%d_%H:%M:%S`" -o cachet_monitor
       - run:
           name: Checking delivery...
           command: ls -l cachet_monitor

@@ -18,7 +18,9 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const appversion = `v3.1`
+var AppBranch string
+var Build string
+var BuildDate string
 
 const usage = `cachet-monitor
 
@@ -52,7 +54,7 @@ Environment variables:
   CACHET_DEV      set to enable dev logging`
 
 func main() {
-	arguments, err := docopt.Parse(usage, nil, true, "cachet-monitor " + appversion, false)
+	arguments, err := docopt.Parse(usage, nil, true, "cachet-monitor - " + AppBranch + "\nBuild commit: " + Build + "\nBuild date: " + BuildDate, false)
 	if err != nil {
 		logrus.Panicf("Unable to start (reading config): %v", err)
 	}
