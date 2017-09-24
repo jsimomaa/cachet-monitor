@@ -64,7 +64,7 @@ jobs:
       - run:
           name: GitHub Release...
           command: |
-            if [ "${CIRCLE_BRANCH}" == "snapshot" ]; then
+            if [[ "`echo ${CIRCLE_BRANCH} | tr '[:upper:]' '[:lower:]'`" == *"snapshot"* ]]; then
               ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --prerelease --replace ${CIRCLE_BRANCH} ./dist
             else
               ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --replace ${CIRCLE_BRANCH} ./dist
