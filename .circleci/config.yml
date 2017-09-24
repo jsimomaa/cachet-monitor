@@ -23,10 +23,13 @@ jobs:
           command: go get .
       - run:
           name: Building...
-          command: go build -ldflags "-X main.AppBranch=${CIRCLE_BRANCH} -X main.Build=${CIRCLE_SHA1} -X main.BuildDate=`date +%Y-%m-%d_%H:%M:%S`" -o cachet_monitor
+          command: go build -ldflags "-X main.AppBranch=`git describe --tags` -X main.Build=${CIRCLE_SHA1} -X main.BuildDate=`date +%Y-%m-%d_%H:%M:%S`" -o cachet_monitor
       - run:
           name: Checking delivery...
           command: ls -l cachet_monitor
+      - run:
+          name: Saving git tag...
+          command: git describe --tags > /go/src/cachet/cli/cachet-monitory.tag
       - save_cache:
           key: cachet-monitory-delivery-cache-{{ checksum "cachet_monitor" }}
           paths:
@@ -64,10 +67,11 @@ jobs:
       - run:
           name: GitHub Release...
           command: |
-            if [[ "`echo ${CIRCLE_BRANCH} | tr '[:upper:]' '[:lower:]'`" == *"snapshot"* ]]; then
-              ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --prerelease --replace ${CIRCLE_BRANCH} ./dist
+            LATEST_TAG=`cat cachet-monitory.tag`
+            if [[ "`echo ${LATEST_TAG} | tr '[:upper:]' '[:lower:]'`" == *"snapshot"* ]]; then
+              ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --prerelease --replace ${LATEST_TAG} ./dist
             else
-              ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --replace ${CIRCLE_BRANCH} ./dist
+              ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --replace ${LATEST_TAG} ./dist
             fi
 
 workflows:
