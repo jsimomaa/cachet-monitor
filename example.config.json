@@ -28,6 +28,7 @@
       },
       "interval": 1,
       "timeout": 1,
+      "resync": 60,
       "threshold": 50,
       "threshold_critical": 80,
       "headers": {

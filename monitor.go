@@ -38,6 +38,7 @@ type AbstractMonitor struct {
 
 	Interval time.Duration
 	Timeout  time.Duration
+	Resync  int
 
 	MetricID    int `mapstructure:"metric_id"`
 	ComponentID int `mapstructure:"component_id"`
@@ -72,6 +73,7 @@ type AbstractMonitor struct {
 	// PerformanceThreshold sets the % limit above which this monitor will trigger degraded-performance
 	// PerformanceThreshold float32
 
+	resyncMod	int
 	currentStatus	int
 	history []bool
 	// lagHistory     []float32
@@ -144,9 +146,7 @@ func (mon *AbstractMonitor) Describe() []string {
 	return features
 }
 
-func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
-	mon.config = cfg
-
+func (mon *AbstractMonitor) ReloadCachetData() {
 	compInfo := mon.config.API.GetComponentData(mon.ComponentID)
 
 	logrus.Infof("Current CachetHQ ID: %d", compInfo.ID)
@@ -156,8 +156,16 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 
 	mon.currentStatus = compInfo.Status
 	mon.Enabled = compInfo.Enabled
+
+	mon.incident,_ = compInfo.LoadCurrentIncident(mon.config)
+}
+
+func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
+	mon.config = cfg
+
+	mon.ReloadCachetData()
+
 	mon.history = append(mon.history, mon.isUp())
-	mon.incident,_ = compInfo.LoadCurrentIncident(cfg)
 	if mon.incident != nil {
 		logrus.Infof("Current incident ID: %v", mon.incident.ID)
 	}
@@ -249,6 +257,12 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 		go mon.config.API.SendMetric(l, mon.MetricID, lag)
 	}
 	go mon.config.API.SendMetrics(l, "response time", mon.Metrics.ResponseTime, lag)
+
+	mon.resyncMod = (mon.resyncMod+1) % mon.Resync
+	if(mon.resyncMod == 0) {
+		l.Debugf("Reloading component's data")
+		mon.ReloadCachetData()
+	}
 }
 
 // TODO: test

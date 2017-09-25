@@ -43,6 +43,10 @@ monitors:
     interval: 1
     # seconds for timeout
     timeout: 1
+
+    # resync component data every x check
+    resync: 60
+
     # If % of downtime is over this threshold, open an incident
     threshold: 50
     threshold_critical: 80
