@@ -16,7 +16,7 @@
       "shellhook": {
         "on_success": "/fullpath/shellhook_onsuccess.sh",
         "on_failure": "/fullpath/shellhook_onfailure.sh"
-      }
+      },
       "template": {
         "investigating": {
           "subject": "{{ .Monitor.Name }} - {{ .SystemName }}",
