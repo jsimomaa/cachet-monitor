@@ -79,6 +79,7 @@ jobs:
             LATEST_TAG=`cat cachet-monitory.tag`
             if [[ "`echo ${LATEST_TAG} | tr '[:upper:]' '[:lower:]'`" == *"snapshot"* ]]; then
               echo "Prereleasing '${LATEST_TAG}'" && ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --prerelease --replace ${LATEST_TAG} ./dist
+              echo "Prereleasing '${LATEST_TAG}'" && ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --prerelease --replace snapshot ./dist
             else
               echo "Releasing '${LATEST_TAG}'" && ./ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --delete --replace ${LATEST_TAG} ./dist
             fi
