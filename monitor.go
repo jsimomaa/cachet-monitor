@@ -30,6 +30,7 @@ type MonitorInterface interface {
 type AbstractMonitor struct {
 	Name   string
 	Target string
+	Enabled bool
 
 	// (default)http / dns
 	Type   string
@@ -150,9 +151,11 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 
 	logrus.Infof("Current CachetHQ ID: %d", compInfo.ID)
 	logrus.Infof("Current CachetHQ name: %s", compInfo.Name)
+	logrus.Infof("Current CachetHQ state: %t", compInfo.Enabled)
 	logrus.Infof("Current CachetHQ status: %d", compInfo.Status)
 
 	mon.currentStatus = compInfo.Status
+	mon.Enabled = compInfo.Enabled
 	mon.history = append(mon.history, mon.isUp())
 	mon.incident,_ = compInfo.LoadCurrentIncident(cfg)
 	if mon.incident != nil {
@@ -216,6 +219,10 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	reqStart := getMs()
 	isUp := iface.test(l)
 	lag := getMs() - reqStart
+
+	if(! mon.Enabled) {
+		l.Printf("monitor is disabled")
+	}
 
 	histSize := HistorySize
 	if len(mon.history) == histSize-1 {
