@@ -30,6 +30,9 @@ jobs:
       - run:
           name: Saving git tag...
           command: git describe --tags --abbrev=0 > /go/src/cachet/cli/cachet-monitory.tag
+      - run:
+          name: Getting default configuration files...
+          command: cp /go/src/cachet/example.config.* /go/src/cachet/cli
       - save_cache:
           key: cachet-monitory-delivery-cache-{{ checksum "cachet_monitor" }}
           paths:
@@ -46,6 +49,12 @@ jobs:
       - run:
           name: Listing build version...
           command: ./cachet_monitor --version
+      - run:
+          name: Testing YML configuration...
+          command: ./cachet_monitor -c example.config.yml --config-test
+      - run:
+          name: Testing JSON configuration...
+          command: ./cachet_monitor -c example.config.json --config-test
       - store_artifacts:
           path: /go/src/cachet/cli/cachet_monitor
           destination: artifact-file

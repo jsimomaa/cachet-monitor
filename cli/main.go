@@ -26,7 +26,7 @@ const usage = `cachet-monitor
 
 Usage:
   cachet-monitor (-c PATH | --config PATH)
-  cachet-monitor (-c PATH | --config PATH) [--log=LOGPATH] [--name=NAME] [--immediate] [--log-level=LOGLEVEL]
+  cachet-monitor (-c PATH | --config PATH) [--log=LOGPATH] [--name=NAME] [--immediate] [--config-test] [--log-level=LOGLEVEL]
   cachet-monitor -h | --help | --version
 
 Options:
@@ -34,6 +34,7 @@ Options:
   -c PATH.json --config PATH     Path to configuration file
   [--log]		         Sets log file
   [--log-level]		         Sets log level
+  [--config-test]                Check configuration file
   [--version]                    Show version
   [--immediate]                  Tick immediately (by default waits for first defined interval)
 
@@ -45,6 +46,7 @@ Arguments:
 
 Examples:
   cachet-monitor -c /root/cachet-monitor.json
+  cachet-monitor -c /root/cachet-monitor.json --config-test
   cachet-monitor -c /root/cachet-monitor.json --log=/var/log/cachet-monitor.log --name="development machine"
   cachet-monitor -c /root/cachet-monitor.json --log=/var/log/cachet-monitor.log
 
@@ -104,6 +106,11 @@ func main() {
 	if valid := cfg.Validate(); !valid {
 		logrus.Errorf("Invalid configuration")
 		os.Exit(1)
+	}
+
+	if _, ok := arguments["--config-test"]; ok {
+		logrus.Infof("Configuration is valid!")
+		os.Exit(0)
 	}
 
 	logrus.Debug("Configuration valid")

@@ -101,7 +101,7 @@ pro tip: run in background using `nohup cachet-monitor 2>&1 > /var/log/cachet-mo
 ```
 Usage:
   cachet-monitor (-c PATH | --config PATH)
-  cachet-monitor (-c PATH | --config PATH) [--log=LOGPATH] [--name=NAME] [--immediate] [--log-level=LOGLEVEL]
+  cachet-monitor (-c PATH | --config PATH) [--log=LOGPATH] [--name=NAME] [--immediate] [--config-test] [--log-level=LOGLEVEL]
   cachet-monitor -h | --help | --version
 
 Arguments:
@@ -119,6 +119,7 @@ Options:
   -c PATH.json --config PATH     Path to configuration file
   [--log]		                 Sets log file
   [--log-level]		         Sets log level
+  [--config-test]                Check configuration file
   [--version]                      Show version
   [--immediate]                    Tick immediately (by default waits for first defined interval)
   
