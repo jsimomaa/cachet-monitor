@@ -108,9 +108,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if _, ok := arguments["--config-test"]; ok {
-		logrus.Infof("Configuration is valid!")
-		os.Exit(0)
+	if configtest, ok := arguments["--config-test"]; ok {
+		if configtest.(bool) {
+			logrus.Infof("Configuration is valid!")
+			os.Exit(0)
+		}
 	}
 
 	logrus.Debug("Configuration valid")
