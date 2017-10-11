@@ -258,10 +258,12 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	}
 	go mon.config.API.SendMetrics(l, "response time", mon.Metrics.ResponseTime, lag)
 
-	mon.resyncMod = (mon.resyncMod+1) % mon.Resync
-	if(mon.resyncMod == 0) {
-		l.Debugf("Reloading component's data")
-		mon.ReloadCachetData()
+	if(mon.Resync > 0) {
+		mon.resyncMod = (mon.resyncMod+1) % mon.Resync
+		if(mon.resyncMod == 0) {
+			l.Debugf("Reloading component's data")
+			mon.ReloadCachetData()
+		}
 	}
 }
 
