@@ -136,6 +136,9 @@ func (mon *AbstractMonitor) Describe() []string {
 	features = append(features, "Availability count metrics: "+strconv.Itoa(len(mon.Metrics.Availability)))
 	features = append(features, "Incident count metrics: "+strconv.Itoa(len(mon.Metrics.IncidentCount)))
 	features = append(features, "Response time metrics: "+strconv.Itoa(len(mon.Metrics.ResponseTime)))
+	if mon.Resync > 0 {
+		features = append(features, "Resyncs every %d cycles", strconv.Itoa(mon.Resync))
+	}
 	if len(mon.ShellHook.OnSuccess) > 0 {
 		features = append(features, "Has a 'on_success' shellhook")
 	}
