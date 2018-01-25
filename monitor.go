@@ -266,6 +266,8 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 		if(mon.resyncMod == 0) {
 			l.Debugf("Reloading component's data")
 			mon.ReloadCachetData()
+		} else {
+			l.Debugf("Resync status: %d/%d", (mon.resyncMod+1), mon.Resync)
 		}
 	}
 }
