@@ -1,4 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+export SCRIPT=$(readlink -f $0)
+export SCRIPTPATH=`dirname $SCRIPT`
 
 function usage
 {
@@ -16,6 +19,7 @@ while [ "$1" != "" ]; do
 		;;
 	-b | --b | -build | --build)
 		echo "Building..."
+		cd ${SCRIPTPATH}/../cli
 		go build -ldflags "-X main.AppBranch=local -X main.Build=unknown -X main.BuildDate=`date +%Y-%m-%d_%H:%M:%S`" -o cachet_monitor
 		if [ $? -gt 0 ]
 		then
@@ -25,6 +29,7 @@ while [ "$1" != "" ]; do
 		;;
 	-d | --d | -download | --download)
 		echo "Downloading..."
+		cd ${SCRIPTPATH}/../cli
 		wget -Ocachet_monitor https://github.com/VeekeeFr/cachet-monitor/releases/download/snapshot/cachet_monitor
 		if [ $? -gt 0 ]
 		then
@@ -35,6 +40,7 @@ while [ "$1" != "" ]; do
 	-r | --r | -run | --run)
 		shift
 		echo "Running using '${1}'"
+		cd ${SCRIPTPATH}/../cli
 		CACHET_DEV="true"
 		./cachet_monitor -c ${1}
 		;;
