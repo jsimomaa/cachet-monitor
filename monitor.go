@@ -137,7 +137,7 @@ func (mon *AbstractMonitor) Describe() []string {
 	features = append(features, "Incident count metrics: "+strconv.Itoa(len(mon.Metrics.IncidentCount)))
 	features = append(features, "Response time metrics: "+strconv.Itoa(len(mon.Metrics.ResponseTime)))
 	if mon.Resync > 0 {
-		features = append(features, "Resyncs every %d cycles", strconv.Itoa(mon.Resync))
+		features = append(features, "Resyncs cycle: " + strconv.Itoa(mon.Resync))
 	}
 	if len(mon.ShellHook.OnSuccess) > 0 {
 		features = append(features, "Has a 'on_success' shellhook")
@@ -267,7 +267,7 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 			l.Debugf("Reloading component's data")
 			mon.ReloadCachetData()
 		} else {
-			l.Debugf("Resync status: %d/%d", (mon.resyncMod+1), mon.Resync)
+			l.Debugf("Resync progressbar: %d/%d", mon.resyncMod, mon.Resync)
 		}
 	}
 }
