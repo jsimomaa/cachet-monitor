@@ -132,11 +132,12 @@ func main() {
 		logrus.Infof("Starting Monitor #%d: ", index)
 		logrus.Infof("Features: \n - %v", strings.Join(monitor.Describe(), "\n - "))
 
-		monitor.Init(cfg)
-
-		go monitor.ClockStart(cfg, monitor, wg)
-
-		logrus.Infof("Monitor #%d has been started", index)
+		if monitor.Init(cfg) {
+			go monitor.ClockStart(cfg, monitor, wg)
+			logrus.Infof("Monitor #%d has been started", index)
+		} else {
+			logrus.Errorf("Monitor #%d has been skipped", index)
+		}
 	}
 
 	signals := make(chan os.Signal, 1)

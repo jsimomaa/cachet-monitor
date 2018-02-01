@@ -20,7 +20,7 @@ type MonitorInterface interface {
 	tick(MonitorInterface)
 	test(l *logrus.Entry) bool
 
-	Init(*CachetMonitor)
+	Init(*CachetMonitor) bool
 	Validate() []string
 	GetMonitor() *AbstractMonitor
 	Describe() []string
@@ -31,6 +31,7 @@ type AbstractMonitor struct {
 	Name   string
 	Target string
 	Enabled bool
+	IsValid bool
 
 	// (default)http / dns
 	Type   string
@@ -169,12 +170,26 @@ func (mon *AbstractMonitor) ReloadCachetData() {
 	}
 }
 
-func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
+func (mon *AbstractMonitor) Init(cfg *CachetMonitor) bool {
 	mon.config = cfg
+
+	mon.IsValid = true
+
+	if ! mon.Enabled {
+		logrus.Infof("Component is disabled")
+		mon.IsValid = false
+	}
+
+	if mon.ComponentID == 0 {
+		logrus.Infof("ComponentID couldn't be retreived")
+		mon.IsValid = false
+	}
 
 	mon.ReloadCachetData()
 
 	mon.history = append(mon.history, mon.isUp())
+
+	return mon.IsValid
 }
 
 func (mon *AbstractMonitor) triggerShellHook(l *logrus.Entry, hooktype string, hook string, data string) {
@@ -195,6 +210,7 @@ func (mon *AbstractMonitor) ClockStart(cfg *CachetMonitor, iface MonitorInterfac
 	wg.Add(1)
 
 	mon.stopC = make(chan bool)
+
 	if cfg.Immediate {
 		mon.tick(iface)
 	}
@@ -233,10 +249,6 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	reqStart := getMs()
 	isUp := iface.test(l)
 	lag := getMs() - reqStart
-
-	if(! mon.Enabled) {
-		l.Printf("monitor is disabled")
-	}
 
 	histSize := HistorySize
 	if len(mon.history) == histSize-1 {
