@@ -31,7 +31,6 @@ type AbstractMonitor struct {
 	Name   string
 	Target string
 	Enabled bool
-	IsValid bool
 
 	// (default)http / dns
 	Type   string
@@ -173,23 +172,18 @@ func (mon *AbstractMonitor) ReloadCachetData() {
 func (mon *AbstractMonitor) Init(cfg *CachetMonitor) bool {
 	mon.config = cfg
 
-	mon.IsValid = true
-
-	if ! mon.Enabled {
-		logrus.Infof("Component is disabled")
-		mon.IsValid = false
-	}
-
-	if mon.ComponentID == 0 {
-		logrus.Infof("ComponentID couldn't be retreived")
-		mon.IsValid = false
-	}
+	IsValid := true
 
 	mon.ReloadCachetData()
 
+	if mon.ComponentID == 0 {
+		logrus.Infof("ComponentID couldn't be retreived")
+		IsValid = false
+	}
+
 	mon.history = append(mon.history, mon.isUp())
 
-	return mon.IsValid
+	return IsValid
 }
 
 func (mon *AbstractMonitor) triggerShellHook(l *logrus.Entry, hooktype string, hook string, data string) {
@@ -245,6 +239,11 @@ func (mon *AbstractMonitor) test(l *logrus.Entry) bool { return false }
 func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	l := logrus.WithFields(logrus.Fields{
 		"monitor": mon.Name })
+
+	if(! mon.Enabled) {
+		l.Printf("monitor is disabled")
+		return
+	}
 
 	reqStart := getMs()
 	isUp := iface.test(l)
