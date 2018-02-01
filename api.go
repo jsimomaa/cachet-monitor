@@ -54,9 +54,13 @@ func (api CachetAPI) SendMetrics(l *logrus.Entry, metricname string, arr []int, 
 		resp,_,_ := api.NewRequest("POST", "/metrics/"+strconv.Itoa(v)+"/points", jsonBytes)
 
 		if resp != nil {
-			l.Debugf("Sending %s metric ID:%d => %v, returns %d", metricname, v, val, resp.StatusCode)
+			if resp.StatusCode == 200 {
+				l.Debugf("Sending %s metric ID:%d => %v, returns %d", metricname, v, val, resp.StatusCode)
+			} else {
+				l.Warnf("Sending %s metric ID:%d => %v, returns %d", metricname, v, val, resp.StatusCode)
+			}
 		} else {
-			l.Debugf("Sending %s metric ID:%d => %v, no return", metricname, v, val)
+			l.Warnf("Sending %s metric ID:%d => %v, no return", metricname, v, val)
 		}
 	}
 }
