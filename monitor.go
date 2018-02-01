@@ -161,6 +161,10 @@ func (mon *AbstractMonitor) ReloadCachetData() {
 	mon.Enabled = compInfo.Enabled
 
 	mon.incident,_ = compInfo.LoadCurrentIncident(mon.config)
+
+	if mon.incident != nil {
+		logrus.Infof("Current incident ID: %v", mon.incident.ID)
+	}
 }
 
 func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
@@ -169,9 +173,6 @@ func (mon *AbstractMonitor) Init(cfg *CachetMonitor) {
 	mon.ReloadCachetData()
 
 	mon.history = append(mon.history, mon.isUp())
-	if mon.incident != nil {
-		logrus.Infof("Current incident ID: %v", mon.incident.ID)
-	}
 }
 
 func (mon *AbstractMonitor) triggerShellHook(l *logrus.Entry, hooktype string, hook string, data string) {
