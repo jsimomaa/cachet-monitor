@@ -135,6 +135,8 @@ func main() {
 		monitor.Init(cfg)
 
 		go monitor.ClockStart(cfg, monitor, wg)
+
+		logrus.Infof("Monitor #%d has been started", index)
 	}
 
 	signals := make(chan os.Signal, 1)
