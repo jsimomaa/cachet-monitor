@@ -17,6 +17,10 @@ type Component struct {
 
 // LoadCurrentIncident - Returns current incident
 func (comp *Component) LoadCurrentIncident(cfg *CachetMonitor) (*Incident, error) {
+	if comp.ID == 0 {
+		return nil, nil
+	}
+
 	jsonBytes, _ := json.Marshal(map[string]interface{}{
 		"component_id":	strconv.Itoa(comp.ID),
 		"status":	1,
