@@ -26,7 +26,7 @@ func (comp *Component) LoadCurrentIncident(cfg *CachetMonitor) (*Incident, error
 	resp, body, err := cfg.API.NewRequest("GET", "/incidents", jsonBytes)
 
 	if err != nil || resp.StatusCode != 200 {
-	        logrus.Warnf("Coun't load incidents: %d", resp.StatusCode)
+		logrus.Warnf("Could not get data from component (id: %d, status: %d, err: %v)", comp.ID, resp.StatusCode, err)
 		return nil, err
 	}
 
