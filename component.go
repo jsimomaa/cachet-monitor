@@ -17,7 +17,13 @@ type Component struct {
 
 // LoadCurrentIncident - Returns current incident
 func (comp *Component) LoadCurrentIncident(cfg *CachetMonitor) (*Incident, error) {
-	resp, body, err := cfg.API.NewRequest("GET", "/incidents?component_id="+strconv.Itoa(comp.ID)+"&status=1&per_page=1", []byte(""))
+	jsonBytes, _ := json.Marshal(map[string]interface{}{
+		"component_id":	strconv.Itoa(comp.ID),
+		"status":	1,
+		"per_page":	1,
+	})
+
+	resp, body, err := cfg.API.NewRequest("GET", "/incidents", jsonBytes)
 
 	if err != nil || resp.StatusCode != 200 {
 	        logrus.Warnf("Coun't load incidents: %d", resp.StatusCode)
