@@ -164,6 +164,8 @@ func (mon *AbstractMonitor) ReloadCachetData() {
 
 	if mon.incident != nil {
 		logrus.Infof("Current incident ID: %v", mon.incident.ID)
+	} else {
+		logrus.Infof("No current incident")
 	}
 }
 
