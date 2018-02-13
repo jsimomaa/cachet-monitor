@@ -63,11 +63,14 @@ type AbstractMonitor struct {
 	}
 
 	// Threshold = percentage / number of down incidents
-	Threshold      float32
-	ThresholdCount bool `mapstructure:"threshold_count"`
+	Threshold      int
+	ThresholdCount int `mapstructure:"threshold_count"`
 
-	CriticalThreshold      float32 `mapstructure:"threshold_critical"`
-	CriticalThresholdCount bool `mapstructure:"threshold_critical_count"`
+	CriticalThreshold      int `mapstructure:"threshold_critical"`
+	CriticalThresholdCount int `mapstructure:"threshold_critical_count"`
+
+	PartialThreshold      int `mapstructure:"threshold_partial"`
+	PartialThresholdCount int `mapstructure:"threshold_partial_count"`
 
 	// lag / average(lagHistory) * 100 = percentage above average lag
 	// PerformanceThreshold sets the % limit above which this monitor will trigger degraded-performance
@@ -108,11 +111,19 @@ func (mon *AbstractMonitor) Validate() []string {
 	}
 
 	if mon.Threshold <= 0 {
-		mon.Threshold = 100
+		mon.Threshold = 0
 	}
 
-	if mon.CriticalThreshold <= 0 {
-		mon.CriticalThreshold = 100
+	if mon.CriticalThreshold < 0 || mon.CriticalThreshold > 100 {
+		mon.CriticalThreshold = 0
+	}
+
+	if mon.PartialThreshold < 0 || mon.PartialThreshold > 100 {
+		mon.PartialThreshold = 0
+	}
+
+	if mon.Threshold == 0 && mon.CriticalThreshold == 0 && mon.PartialThreshold == 0 && mon.ThresholdCount == 0 && mon.CriticalThresholdCount == 0 && mon.PartialThresholdCount == 0 {
+		mon.Threshold = 100
 	}
 
 	if err := mon.Template.Fixed.Compile(); err != nil {
@@ -156,6 +167,28 @@ func (mon *AbstractMonitor) ReloadCachetData() {
 	logrus.Infof("Current CachetHQ name: %s", compInfo.Name)
 	logrus.Infof("Current CachetHQ state: %t", compInfo.Enabled)
 	logrus.Infof("Current CachetHQ status: %d", compInfo.Status)
+	if mon.ThresholdCount > 0 || mon.Threshold > 0 {
+		if mon.ThresholdCount > 0 {
+			logrus.Infof("Threshold (count): %d", mon.ThresholdCount)
+		} else {
+			logrus.Infof("Threshold (percent): %d", mon.Threshold)
+		}
+	} else {
+		if mon.CriticalThresholdCount > 0 || mon.CriticalThreshold > 0 {
+			if mon.CriticalThresholdCount > 0 {
+				logrus.Infof("Critical threshold (count): %d", mon.CriticalThresholdCount)
+			} else {
+				logrus.Infof("Critical threshold (percent): %d", mon.CriticalThreshold)
+			}
+		}
+		if mon.PartialThresholdCount > 0 || mon.PartialThreshold > 0 {
+			if mon.PartialThresholdCount > 0 {
+				logrus.Infof("Partial threshold (count): %d", mon.PartialThresholdCount)
+			} else {
+				logrus.Infof("Partial threshold (percent): %d", mon.PartialThreshold)
+			}
+		}
+	}
 
 	mon.currentStatus = compInfo.Status
 	mon.Enabled = compInfo.Enabled
@@ -234,6 +267,14 @@ func (mon *AbstractMonitor) isUp() bool {
 	return (mon.currentStatus == 1)
 }
 
+func (mon *AbstractMonitor) isPartial() bool {
+	return (mon.currentStatus == 3)
+}
+
+func (mon *AbstractMonitor) isCritical() bool {
+	return (mon.currentStatus == 4)
+}
+
 func (mon *AbstractMonitor) test(l *logrus.Entry) bool { return false }
 
 func (mon *AbstractMonitor) tick(iface MonitorInterface) {
@@ -253,7 +294,7 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	if len(mon.history) == histSize-1 {
 		l.Debugf("monitor %v is now fully operational", mon.Name)
 	}
-	if mon.ThresholdCount {
+	if mon.ThresholdCount > 0 {
 		histSize = int(mon.Threshold)
 	}
 
@@ -301,14 +342,14 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	if numDown == 0 {
 		l.Printf("monitor is up")
 		go mon.config.API.SendMetrics(l, "availability", mon.Metrics.Availability, 1)
-	} else if mon.ThresholdCount {
+	} else if mon.ThresholdCount > 0 {
 		l.Printf("monitor down (down count=%d, threshold=%d)", t, mon.Threshold)
 	} else {
 		l.Printf("monitor down (down percentage=%.2f%%, threshold=%.2f%%)", t, mon.Threshold)
 	}
 
 	histSize := HistorySize
-	if mon.ThresholdCount {
+	if mon.ThresholdCount > 0 {
 		histSize = int(mon.Threshold)
 	}
 
@@ -319,21 +360,30 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	}
 
 	triggered := false
-	if mon.ThresholdCount || mon.Threshold > 0 {
-		triggered = (mon.ThresholdCount && numDown == int(mon.Threshold)) || (!mon.ThresholdCount && t > mon.Threshold)
-	}
-	
 	criticalTriggered := false
-	if mon.CriticalThresholdCount || mon.CriticalThreshold > 0 {
-		criticalTriggered = (mon.CriticalThresholdCount && numDown == int(mon.CriticalThreshold)) || (!mon.CriticalThresholdCount && t > mon.CriticalThreshold)
+	partialTriggered := false
+
+	if mon.ThresholdCount > 0 || mon.Threshold > 0 {
+		triggered = (mon.ThresholdCount > 0 && numDown >= mon.ThresholdCount) || (mon.Threshold > 0 && int(t) > mon.Threshold)
+	} else {
+		if mon.CriticalThresholdCount > 0 || mon.CriticalThreshold > 0 {
+			criticalTriggered = (mon.CriticalThresholdCount > 0 && numDown >= mon.CriticalThresholdCount) || (mon.CriticalThreshold > 0 && int(t) > mon.CriticalThreshold)
+		}
+		if ! criticalTriggered {
+			if mon.PartialThresholdCount > 0 || mon.PartialThreshold > 0 {
+				partialTriggered = (mon.PartialThresholdCount > 0 && numDown >= mon.PartialThresholdCount) || (mon.PartialThreshold > 0 && int(t) > mon.PartialThreshold)
+			}
+		}
 	}
+
 	l.Debugf("Down count: %d, history: %d, percentage: %.2f", numDown, len(mon.history), t)
 	l.Debugf("Down percentage: %.2f%%", t)
 	l.Debugf("Triggered: %t", triggered)
 	l.Debugf("Critically Triggered: %t", criticalTriggered)
+	l.Debugf("Partially Triggered: %t", partialTriggered)
 	l.Debugf("Monitor's current incident: %v", mon.incident)
 
-	if triggered {
+	if triggered || criticalTriggered || partialTriggered {
 		// Process metric
 		go mon.config.API.SendMetrics(l, "incident count", mon.Metrics.IncidentCount, 1)
 
@@ -344,25 +394,35 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 			tplData["FailReason"] = mon.lastFailReason
 
 			subject, message := mon.Template.Investigating.Exec(tplData)
+			incidentForceComponentStatus := 4
+			if partialTriggered {
+				incidentForceComponentStatus = 3
+			}
 			mon.incident = &Incident{
 				Name:        subject,
 				ComponentID: mon.ComponentID,
 				Message:     message,
 				Notify:      true,
+				ComponentStatus: incidentForceComponentStatus,
 			}
 
 			// is down, create an incident
 			l.Warnf("creating incident. Monitor is down: %v", mon.lastFailReason)
 			// set investigating status
 			mon.incident.SetInvestigating()
-			// create incident and set component's status
+			// create incident 
 			if err := mon.incident.Send(mon.config); err != nil {
 				l.Printf("Error sending incident: %v", err)
 			}
 		}
-		if criticalTriggered {
-			if (mon.currentStatus != 4) {
+		if triggered || criticalTriggered {
+			if (! mon.isCritical()) {
 				mon.config.API.SetComponentStatus(mon, 4)
+			}
+		}
+		if partialTriggered {
+			if (! mon.isPartial()) {
+				mon.config.API.SetComponentStatus(mon, 3)
 			}
 		}
 		return
