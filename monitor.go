@@ -342,10 +342,6 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	if numDown == 0 {
 		l.Printf("monitor is up")
 		go mon.config.API.SendMetrics(l, "availability", mon.Metrics.Availability, 1)
-	} else if mon.ThresholdCount > 0 {
-		l.Printf("monitor down (down count=%d, threshold=%d)", t, mon.Threshold)
-	} else {
-		l.Printf("monitor down (down percentage=%.2f%%, threshold=%.2f%%)", t, mon.Threshold)
 	}
 
 	histSize := HistorySize
@@ -364,23 +360,38 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	partialTriggered := false
 
 	if mon.ThresholdCount > 0 || mon.Threshold > 0 {
-		triggered = (mon.ThresholdCount > 0 && numDown >= mon.ThresholdCount) || (mon.Threshold > 0 && int(t) > mon.Threshold)
+		if mon.ThresholdCount > 0 {
+			triggered = (numDown >= mon.ThresholdCount)
+			l.Printf("monitor down (down count=%d, threshold=%d)", numDown, mon.Threshold)
+		} else {
+			triggered = (int(t) > mon.Threshold)
+			l.Printf("monitor down (down percentage=%.2f%%, threshold=%d%%)", t, mon.Threshold)
+		}
 	} else {
 		if mon.CriticalThresholdCount > 0 || mon.CriticalThreshold > 0 {
-			criticalTriggered = (mon.CriticalThresholdCount > 0 && numDown >= mon.CriticalThresholdCount) || (mon.CriticalThreshold > 0 && int(t) > mon.CriticalThreshold)
+			if mon.CriticalThresholdCount > 0 {
+				criticalTriggered = (numDown >= mon.CriticalThresholdCount)
+			} else {
+				criticalTriggered = (int(t) > mon.CriticalThreshold)
+			}
 		}
 		if ! criticalTriggered {
 			if mon.PartialThresholdCount > 0 || mon.PartialThreshold > 0 {
 				partialTriggered = (mon.PartialThresholdCount > 0 && numDown >= mon.PartialThresholdCount) || (mon.PartialThreshold > 0 && int(t) > mon.PartialThreshold)
 			}
 		}
+		if mon.CriticalThresholdCount > 0 || mon.PartialThresholdCount > 0 {
+			l.Printf("monitor down (down count=%d, partial threshold=%d, critical threshold=%d)", numDown, mon.PartialThresholdCount, mon.CriticalThresholdCount)
+		}
+		if mon.CriticalThreshold > 0 || mon.PartialThreshold > 0 {
+			l.Printf("monitor down (down percentage=%.2f%%, partial threshold=%d%%, critical threshold=%d%%)", t, mon.PartialThreshold, mon.CriticalThreshold)
+		}
 	}
 
-	l.Debugf("Down count: %d, history: %d, percentage: %.2f", numDown, len(mon.history), t)
-	l.Debugf("Down percentage: %.2f%%", t)
-	l.Debugf("Triggered: %t", triggered)
-	l.Debugf("Critically Triggered: %t", criticalTriggered)
-	l.Debugf("Partially Triggered: %t", partialTriggered)
+	l.Debugf("Down count: %d, history: %d, percentage: %.2f%%", numDown, len(mon.history), t)
+	l.Debugf("Is triggered: %t", triggered)
+	l.Debugf("Is critically Triggered: %t", criticalTriggered)
+	l.Debugf("Is partially Triggered: %t", partialTriggered)
 	l.Debugf("Monitor's current incident: %v", mon.incident)
 
 	if triggered || criticalTriggered || partialTriggered {
