@@ -368,84 +368,85 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	criticalTriggered := false
 	partialTriggered := false
 
-	if mon.ThresholdCount > 0 || mon.Threshold > 0 {
-		if mon.ThresholdCount > 0 {
-			triggered = (numDown >= mon.ThresholdCount)
-			l.Printf("monitor down (down count=%d, threshold=%d)", numDown, mon.Threshold)
-		} else {
-			triggered = (int(t) > mon.Threshold)
-			l.Printf("monitor down (down percentage=%.2f%%, threshold=%d%%)", t, mon.Threshold)
-		}
-	} else {
-		if mon.CriticalThresholdCount > 0 || mon.CriticalThreshold > 0 {
-			if mon.CriticalThresholdCount > 0 {
-				criticalTriggered = (numDown >= mon.CriticalThresholdCount)
+	if numDown > 0 {
+		if mon.ThresholdCount > 0 || mon.Threshold > 0 {
+			if mon.ThresholdCount > 0 {
+				triggered = (numDown >= mon.ThresholdCount)
+				l.Printf("monitor down (down count=%d, threshold=%d)", numDown, mon.Threshold)
 			} else {
-				criticalTriggered = (int(t) > mon.CriticalThreshold)
+				triggered = (int(t) > mon.Threshold)
+				l.Printf("monitor down (down percentage=%.2f%%, threshold=%d%%)", t, mon.Threshold)
+			}
+		} else {
+			if mon.CriticalThresholdCount > 0 || mon.CriticalThreshold > 0 {
+				if mon.CriticalThresholdCount > 0 {
+					criticalTriggered = (numDown >= mon.CriticalThresholdCount)
+				} else {
+					criticalTriggered = (int(t) > mon.CriticalThreshold)
+				}
+			}
+			if ! criticalTriggered {
+				if mon.PartialThresholdCount > 0 || mon.PartialThreshold > 0 {
+					partialTriggered = (mon.PartialThresholdCount > 0 && numDown >= mon.PartialThresholdCount) || (mon.PartialThreshold > 0 && int(t) > mon.PartialThreshold)
+				}
+			}
+			if mon.CriticalThresholdCount > 0 || mon.PartialThresholdCount > 0 {
+				l.Printf("monitor down (down count=%d, partial threshold=%d, critical threshold=%d)", numDown, mon.PartialThresholdCount, mon.CriticalThresholdCount)
+			}
+			if mon.CriticalThreshold > 0 || mon.PartialThreshold > 0 {
+				l.Printf("monitor down (down percentage=%.2f%%, partial threshold=%d%%, critical threshold=%d%%)", t, mon.PartialThreshold, mon.CriticalThreshold)
 			}
 		}
-		if ! criticalTriggered {
-			if mon.PartialThresholdCount > 0 || mon.PartialThreshold > 0 {
-				partialTriggered = (mon.PartialThresholdCount > 0 && numDown >= mon.PartialThresholdCount) || (mon.PartialThreshold > 0 && int(t) > mon.PartialThreshold)
+		l.Debugf("Down count: %d, history: %d, percentage: %.2f%%", numDown, len(mon.history), t)
+		l.Debugf("Is triggered: %t", triggered)
+		l.Debugf("Is critically Triggered: %t", criticalTriggered)
+		l.Debugf("Is partially Triggered: %t", partialTriggered)
+		l.Debugf("Monitor's current incident: %v", mon.incident)
+
+		if triggered || criticalTriggered || partialTriggered {
+			// Process metric
+			go mon.config.API.SendMetrics(l, "incident count", mon.Metrics.IncidentCount, 1)
+
+			if mon.incident == nil {
+				// create incident
+				mon.currentStatus = 2
+				tplData := getTemplateData(mon)
+				tplData["FailReason"] = mon.lastFailReason
+
+				subject, message := mon.Template.Investigating.Exec(tplData)
+				incidentForceComponentStatus := 4
+				if partialTriggered {
+					incidentForceComponentStatus = 3
+				}
+				mon.incident = &Incident{
+					Name:        subject,
+					ComponentID: mon.ComponentID,
+					Message:     message,
+					Notify:      true,
+					ComponentStatus: incidentForceComponentStatus,
+				}
+
+				// is down, create an incident
+				l.Warnf("creating incident. Monitor is down: %v", mon.lastFailReason)
+				// set investigating status
+				mon.incident.SetInvestigating()
+				// create incident 
+				if err := mon.incident.Send(mon.config); err != nil {
+					l.Printf("Error sending incident: %v", err)
+				}
 			}
-		}
-		if mon.CriticalThresholdCount > 0 || mon.PartialThresholdCount > 0 {
-			l.Printf("monitor down (down count=%d, partial threshold=%d, critical threshold=%d)", numDown, mon.PartialThresholdCount, mon.CriticalThresholdCount)
-		}
-		if mon.CriticalThreshold > 0 || mon.PartialThreshold > 0 {
-			l.Printf("monitor down (down percentage=%.2f%%, partial threshold=%d%%, critical threshold=%d%%)", t, mon.PartialThreshold, mon.CriticalThreshold)
-		}
-	}
-
-	l.Debugf("Down count: %d, history: %d, percentage: %.2f%%", numDown, len(mon.history), t)
-	l.Debugf("Is triggered: %t", triggered)
-	l.Debugf("Is critically Triggered: %t", criticalTriggered)
-	l.Debugf("Is partially Triggered: %t", partialTriggered)
-	l.Debugf("Monitor's current incident: %v", mon.incident)
-
-	if triggered || criticalTriggered || partialTriggered {
-		// Process metric
-		go mon.config.API.SendMetrics(l, "incident count", mon.Metrics.IncidentCount, 1)
-
-		if mon.incident == nil {
-			// create incident
-			mon.currentStatus = 2
-			tplData := getTemplateData(mon)
-			tplData["FailReason"] = mon.lastFailReason
-
-			subject, message := mon.Template.Investigating.Exec(tplData)
-			incidentForceComponentStatus := 4
+			if triggered || criticalTriggered {
+				if (! mon.isCritical()) {
+					mon.config.API.SetComponentStatus(mon, 4)
+				}
+			}
 			if partialTriggered {
-				incidentForceComponentStatus = 3
+				if (! mon.isPartial()) {
+					mon.config.API.SetComponentStatus(mon, 3)
+				}
 			}
-			mon.incident = &Incident{
-				Name:        subject,
-				ComponentID: mon.ComponentID,
-				Message:     message,
-				Notify:      true,
-				ComponentStatus: incidentForceComponentStatus,
-			}
-
-			// is down, create an incident
-			l.Warnf("creating incident. Monitor is down: %v", mon.lastFailReason)
-			// set investigating status
-			mon.incident.SetInvestigating()
-			// create incident 
-			if err := mon.incident.Send(mon.config); err != nil {
-				l.Printf("Error sending incident: %v", err)
-			}
+			return
 		}
-		if triggered || criticalTriggered {
-			if (! mon.isCritical()) {
-				mon.config.API.SetComponentStatus(mon, 4)
-			}
-		}
-		if partialTriggered {
-			if (! mon.isPartial()) {
-				mon.config.API.SetComponentStatus(mon, 3)
-			}
-		}
-		return
 	}
 
 	// we are up to normal
