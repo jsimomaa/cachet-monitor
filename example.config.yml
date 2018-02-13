@@ -49,6 +49,7 @@ monitors:
 
     # If % of downtime is over this threshold, open an incident
     # threshold: 50
+    history_size: 10
     threshold_critical: 80
     threshold_partial: 20
 

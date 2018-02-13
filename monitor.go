@@ -12,7 +12,7 @@ import (
 const DefaultInterval = time.Second * 60
 const DefaultTimeout = time.Second
 const DefaultTimeFormat = "15:04:05 Jan 2 MST"
-const HistorySize = 10
+const DefaultHistorySize = 10
 
 type MonitorInterface interface {
 	ClockStart(*CachetMonitor, MonitorInterface, *sync.WaitGroup)
@@ -63,6 +63,8 @@ type AbstractMonitor struct {
 	}
 
 	// Threshold = percentage / number of down incidents
+	HistorySize      int `mapstructure:"history_size"`
+
 	Threshold      int
 	ThresholdCount int `mapstructure:"threshold_count"`
 
@@ -110,16 +112,32 @@ func (mon *AbstractMonitor) Validate() []string {
 		errs = append(errs, "component_id & metric_id are unset")
 	}
 
+	if mon.HistorySize <= 0 {
+		mon.HistorySize = DefaultHistorySize
+	}
+
 	if mon.Threshold <= 0 {
 		mon.Threshold = 0
 	}
 
-	if mon.CriticalThreshold < 0 || mon.CriticalThreshold > 100 {
+	if mon.Threshold > 0 && mon.Threshold > mon.HistorySize {
+		mon.Threshold = mon.HistorySize
+	}
+
+	if mon.CriticalThreshold <= 0 {
 		mon.CriticalThreshold = 0
 	}
 
-	if mon.PartialThreshold < 0 || mon.PartialThreshold > 100 {
+	if mon.CriticalThreshold > 0 && mon.CriticalThreshold > mon.HistorySize {
+		mon.CriticalThreshold = mon.HistorySize
+	}
+
+	if mon.PartialThreshold <= 0 {
 		mon.PartialThreshold = 0
+	}
+
+	if mon.PartialThreshold > 0 && mon.PartialThreshold > mon.HistorySize {
+		mon.PartialThreshold = mon.HistorySize
 	}
 
 	if mon.Threshold == 0 && mon.CriticalThreshold == 0 && mon.PartialThreshold == 0 && mon.ThresholdCount == 0 && mon.CriticalThresholdCount == 0 && mon.PartialThresholdCount == 0 {
@@ -290,16 +308,12 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	isUp := iface.test(l)
 	lag := getMs() - reqStart
 
-	histSize := HistorySize
-	if len(mon.history) == histSize-1 {
+	if len(mon.history) == mon.HistorySize-1 {
 		l.Debugf("monitor %v is now fully operational", mon.Name)
 	}
-	if mon.ThresholdCount > 0 {
-		histSize = int(mon.Threshold)
-	}
 
-	if len(mon.history) >= histSize {
-		mon.history = mon.history[len(mon.history)-(histSize-1):]
+	if len(mon.history) >= mon.HistorySize {
+		mon.history = mon.history[len(mon.history)-(mon.HistorySize-1):]
 	}
 	mon.history = append(mon.history, isUp)
 
@@ -344,14 +358,9 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 		go mon.config.API.SendMetrics(l, "availability", mon.Metrics.Availability, 1)
 	}
 
-	histSize := HistorySize
-	if mon.ThresholdCount > 0 {
-		histSize = int(mon.Threshold)
-	}
-
-	if len(mon.history) != histSize {
+	if len(mon.history) != mon.HistorySize {
 		// not yet saturated
-		l.Debugf("Component's history has not been yet saturated (stack: %d/%d)", len(mon.history), histSize)
+		l.Debugf("Component's history has not been yet saturated (stack: %d/%d)", len(mon.history), mon.HistorySize)
 		return
 	}
 
