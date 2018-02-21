@@ -129,7 +129,7 @@ func (mon *HTTPMonitor) Validate() []string {
 	errs := mon.AbstractMonitor.Validate()
 
 	if len(mon.Target) == 0 {
-		return errs
+		errs = append(errs, "'Target' has not been set")
 	}
 
 	if len(mon.ExpectedBody) == 0 && mon.ExpectedStatusCode == 0 {

@@ -310,9 +310,7 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 
 	reqStart := getMs()
 	isUp := true
-	if len(mon.Target) > 0 {
-		isUp = iface.test(l)
-	}
+	isUp = iface.test(l)
 	lag := getMs() - reqStart
 
 	if len(mon.history) == mon.HistorySize-1 {

@@ -69,15 +69,11 @@ monitors:
 
     # seconds between checks
     interval: 1
-    
-    # set to post to cachet metric (graph)
-    metrics:
-        response_time: [ 4, 5 ]
 
-    # launch script depending on event (failed or successful check)
+    type: mock
+
     shellhook:
         on_success: /fullpath/shellhook_onsuccess.sh
-        on_failure: /fullpath/shellhook_onfailure.sh
 
   # dns monitor example
   - name: dns
