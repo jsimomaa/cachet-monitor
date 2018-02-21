@@ -128,6 +128,10 @@ func (mon *HTTPMonitor) Validate() []string {
 
 	errs := mon.AbstractMonitor.Validate()
 
+	if len(mon.Target) == 0 {
+		return errs
+	}
+
 	if len(mon.ExpectedBody) == 0 && mon.ExpectedStatusCode == 0 {
 		errs = append(errs, "Both 'expected_body' and 'expected_status_code' fields empty")
 	}
