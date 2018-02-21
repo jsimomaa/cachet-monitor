@@ -116,7 +116,7 @@ func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 		}
 	}
 
-	monitor.triggerShellHook(l, "on_success", monitor.ShellHook.OnSuccess, string(responseBody))
+	monitor.triggerShellHook(l, "on_success", monitor.ShellHookOnSuccess, string(responseBody))
 
 	return true
 }

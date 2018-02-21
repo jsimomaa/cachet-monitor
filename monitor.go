@@ -51,10 +51,8 @@ type AbstractMonitor struct {
 	}
 
 	// ShellHook stuff
-	ShellHook struct {
-		OnSuccess string	`mapstructure:"on_success"`
-		OnFailure string	`mapstructure:"on_failure"`
-	}
+	ShellHookOnSuccess string	`mapstructure:"on_success"`
+	ShellHookOnFailure string	`mapstructure:"on_failure"`
 
 	// Templating stuff
 	Template struct {
@@ -173,10 +171,10 @@ func (mon *AbstractMonitor) Describe() []string {
 	if mon.Resync > 0 {
 		features = append(features, "Resyncs cycle: " + strconv.Itoa(mon.Resync))
 	}
-	if len(mon.ShellHook.OnSuccess) > 0 {
+	if len(mon.ShellHookOnSuccess) > 0 {
 		features = append(features, "Has a 'on_success' shellhook")
 	}
-	if len(mon.ShellHook.OnFailure) > 0 {
+	if len(mon.ShellHookOnFailure) > 0 {
 		features = append(features, "Has a 'on_failure' shellhook")
 	}
 
@@ -326,7 +324,7 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 
 	// Will trigger shellhook 'on_failure' as this isn't done in implementations
 	if ! isUp {
-		mon.triggerShellHook(l, "on_failure", mon.ShellHook.OnFailure, "")
+		mon.triggerShellHook(l, "on_failure", mon.ShellHookOnFailure, "")
 	}
 
 	// report lag
