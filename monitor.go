@@ -162,6 +162,11 @@ func (mon *AbstractMonitor) Describe() []string {
 	if len(mon.Name) > 0 {
 		features = append(features, "Name: "+mon.Name)
 	}
+	if len(mon.Target) > 0 {
+		features = append(features, "Target: "+mon.Target)
+	} else {
+		features = append(features, "Target: <mock>")
+	}
 	features = append(features, "Availability count metrics: "+strconv.Itoa(len(mon.Metrics.Availability)))
 	features = append(features, "Incident count metrics: "+strconv.Itoa(len(mon.Metrics.IncidentCount)))
 	features = append(features, "Response time metrics: "+strconv.Itoa(len(mon.Metrics.ResponseTime)))
@@ -296,8 +301,7 @@ func (mon *AbstractMonitor) isCritical() bool {
 func (mon *AbstractMonitor) test(l *logrus.Entry) bool { return false }
 
 func (mon *AbstractMonitor) tick(iface MonitorInterface) {
-	l := logrus.WithFields(logrus.Fields{
-		"monitor": mon.Name })
+	l := logrus.WithFields(logrus.Fields{ "monitor": mon.Name })
 
 	if(! mon.Enabled) {
 		l.Printf("monitor is disabled")
@@ -305,7 +309,10 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 	}
 
 	reqStart := getMs()
-	isUp := iface.test(l)
+	isUp := true
+	if len(mon.Target) > 0 {
+		isUp = iface.test(l)
+	}
 	lag := getMs() - reqStart
 
 	if len(mon.history) == mon.HistorySize-1 {
@@ -354,7 +361,7 @@ func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 
 	t := (float32(numDown) / float32(len(mon.history))) * 100
 	if numDown == 0 {
-		l.Printf("monitor is up")
+		l.Printf("monitor is fully up")
 		go mon.config.API.SendMetrics(l, "availability", mon.Metrics.Availability, 1)
 	}
 

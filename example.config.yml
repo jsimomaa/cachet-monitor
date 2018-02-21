@@ -60,6 +60,25 @@ monitors:
     expected_status_code: 200
     # regex to match body
     expected_body: "P.*NG"
+
+  # mock monitor example
+  - name: mock
+    
+    # set to update component (either component_id or metric_id are required)
+    component_id: 3
+
+    # seconds between checks
+    interval: 1
+    
+    # set to post to cachet metric (graph)
+    metrics:
+        response_time: [ 4, 5 ]
+
+    # launch script depending on event (failed or successful check)
+    shellhook:
+        on_success: /fullpath/shellhook_onsuccess.sh
+        on_failure: /fullpath/shellhook_onfailure.sh
+
   # dns monitor example
   - name: dns
     # fqdn
