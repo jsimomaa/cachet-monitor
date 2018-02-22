@@ -27,9 +27,8 @@ monitors:
     metric_id: 4
 
     # launch script depending on event (failed or successful check)
-    shellhook:
-        on_success: /fullpath/shellhook_onsuccess.sh
-        on_failure: /fullpath/shellhook_onfailure.sh
+    on_success: /fullpath/shellhook_onsuccess.sh
+    on_failure: /fullpath/shellhook_onfailure.sh
 
     # custom templates (see readme for details)
     template:

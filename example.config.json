@@ -13,10 +13,8 @@
       "method": "POST",
       "component_id": 1,
       "metric_id": 4,
-      "shellhook": {
-        "on_success": "/fullpath/shellhook_onsuccess.sh",
-        "on_failure": "/fullpath/shellhook_onfailure.sh"
-      },
+      "on_success": "/fullpath/shellhook_onsuccess.sh",
+      "on_failure": "/fullpath/shellhook_onfailure.sh",
       "template": {
         "investigating": {
           "subject": "{{ .Monitor.Name }} - {{ .SystemName }}",
