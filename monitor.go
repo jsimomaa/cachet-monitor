@@ -78,11 +78,13 @@ type AbstractMonitor struct {
 
 	resyncMod	int
 	currentStatus	int
-	history []bool
-	// lagHistory     []float32
-	lastFailReason string
-	incident       *Incident
-	config         *CachetMonitor
+	currentDownCount int
+	currentUpCount	int
+	history		[]bool
+	// lagHistory   []float32
+	lastFailReason	string
+	incident       	*Incident
+	config         	*CachetMonitor
 
 	// Closed when mon.Stop() is called
 	stopC chan bool
@@ -247,7 +249,7 @@ func (mon *AbstractMonitor) triggerShellHook(l *logrus.Entry, hooktype string, h
 	l.Infof("Sending '%s' shellhook", hooktype)
 	l.Debugf("Data: %s", data)
 
-	out, err := exec.Command(hook, mon.Name, strconv.Itoa(mon.ComponentID), mon.Target, hooktype, data).Output()
+	out, err := exec.Command(hook, mon.Name, strconv.Itoa(mon.ComponentID), mon.Target, hooktype, data, strconv.Itoa(mon.currentUpCount), strconv.Itoa(mon.currentDownCount)).Output()
 	if err != nil {
 	    l.Warnf("Error when processing shellhook '%s': %s", hooktype, err)
 	    l.Warnf("Command output: %s", out)
@@ -349,9 +351,14 @@ func (mon *AbstractMonitor) tick(iface MonitorInterface) {
 func (mon *AbstractMonitor) AnalyseData(l *logrus.Entry) {
 	// look at the past few incidents
 	numDown := 0
+	mon.currentUpCount = 0
+	mon.currentDownCount = 0
 	for _, wasUp := range mon.history {
 		if wasUp == false {
 			numDown++
+			mon.currentDownCount++
+		} else {
+			mon.currentUpCount++
 		}
 	}
 
