@@ -249,7 +249,7 @@ func (mon *AbstractMonitor) triggerShellHook(l *logrus.Entry, hooktype string, h
 	l.Infof("Sending '%s' shellhook", hooktype)
 	l.Debugf("Data: %s", data)
 
-	out, err := exec.Command(hook, mon.Name, strconv.Itoa(mon.ComponentID), mon.Target, hooktype, data, strconv.Itoa(mon.currentUpCount), strconv.Itoa(mon.currentDownCount)).Output()
+	out, err := exec.Command(hook, mon.Name, strconv.Itoa(mon.ComponentID), mon.Target, hooktype, data, strconv.Itoa(mon.currentStatus), strconv.Itoa(mon.currentUpCount), strconv.Itoa(mon.currentDownCount)).Output()
 	if err != nil {
 	    l.Warnf("Error when processing shellhook '%s': %s", hooktype, err)
 	    l.Warnf("Command output: %s", out)
