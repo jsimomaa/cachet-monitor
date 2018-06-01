@@ -43,8 +43,13 @@ func (cfg *CachetMonitor) Validate() bool {
 	}
 
 	for index, monitor := range cfg.Monitors {
-		if errs := monitor.Validate(); len(errs) > 0 {
-			logrus.Warnf("Monitor validation errors (index %d): %v", index, "\n - "+strings.Join(errs, "\n - "))
+		if monitor != nil {
+			if errs := monitor.Validate(); len(errs) > 0 {
+				logrus.Warnf("Monitor validation errors (index %d): %v", index, "\n - "+strings.Join(errs, "\n - "))
+				valid = false
+			}
+		} else {
+			logrus.Warnf("Monitor validation errors (index %d): no loaded monitor", index)
 			valid = false
 		}
 	}
