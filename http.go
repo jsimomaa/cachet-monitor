@@ -82,6 +82,13 @@ func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 	                },
 		 },
 	}
+
+    if monitor.ExpectedStatusCode == 302 {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		} 
+	}
+
 	l.Debugf("InsecureSkipVerify: %t", (! monitor.Strict))
 
 	resp, err := client.Do(req)
