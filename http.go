@@ -34,7 +34,7 @@ type HTTPMonitor struct {
 	AbstractMonitor `mapstructure:",squash"`
 
 	Method             string
-	ExpectedStatusCode int `mapstructure:"expected_status_code"`
+	ExpectedStatusCode []int `mapstructure:"expected_status_code"`
 	Headers            map[string]string
 
 	// compiled to Regexp
@@ -65,6 +65,31 @@ func (monitor *HTTPMonitor) setBodyRegexp(errs []string) {
 	}
 }
 
+func contains(s []int, e int) bool {
+    for _, a := range s {
+        if a == e {
+            return true
+        }
+    }
+    return false
+}
+
+func intToStr(values []int) string {
+	valuesText := []string{}
+
+    // Create a string slice using strconv.Itoa.
+    // ... Append strings to it.
+    for i := range values {
+        number := values[i]
+        text := strconv.Itoa(number)
+        valuesText = append(valuesText, text)
+    }
+
+    // Join our string slice.
+	result := strings.Join(valuesText, ",")
+	return result;
+}
+
 // TODO: test
 func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 
@@ -83,7 +108,7 @@ func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 		 },
 	}
 
-    if monitor.ExpectedStatusCode == 302 {
+    if (contains(monitor.ExpectedStatusCode, 302)) || (contains(monitor.ExpectedStatusCode, 307)) {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		} 
@@ -100,8 +125,8 @@ func (monitor *HTTPMonitor) test(l *logrus.Entry) bool {
 
 	defer resp.Body.Close()
 
-	if monitor.ExpectedStatusCode > 0 && resp.StatusCode != monitor.ExpectedStatusCode {
-		monitor.lastFailReason = "Expected HTTP response status: " + strconv.Itoa(monitor.ExpectedStatusCode) + ", got: " + strconv.Itoa(resp.StatusCode)
+	if len(monitor.ExpectedStatusCode) > 0 && !contains(monitor.ExpectedStatusCode, resp.StatusCode) {
+		monitor.lastFailReason = "Expected HTTP response status: " + intToStr(monitor.ExpectedStatusCode) + ", got: " + strconv.Itoa(resp.StatusCode)
 		l.Infof("%s", monitor.lastFailReason)
 		return false
 	}
@@ -139,7 +164,7 @@ func (mon *HTTPMonitor) Validate() []string {
 		errs = append(errs, "'Target' has not been set")
 	}
 
-	if len(mon.ExpectedBody) == 0 && mon.ExpectedStatusCode == 0 {
+	if len(mon.ExpectedBody) == 0 && len(mon.ExpectedStatusCode) == 0 {
 		errs = append(errs, "Both 'expected_body' and 'expected_status_code' fields empty")
 	}
 
